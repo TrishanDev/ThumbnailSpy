@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DCSD5JTZMX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-DCSD5JTZMX');
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ThumbnailSpy — Stop guessing. Spy on the feed.</title>
+    <meta name="description"
+        content="Upload your YouTube thumbnail, preview it inside a real search feed next to competitors, and get AI feedback on exactly what to fix." />
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/png" href="assets/FAVICON/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="assets/FAVICON/favicon.svg" />
+    <link rel="shortcut icon" href="assets/FAVICON/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/FAVICON/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="ThumbnailSpy" />
+    <link rel="manifest" href="assets/FAVICON/site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --bg-elevated: #151517;
+            --surface: #1b1b1e;
+            --surface-hover: #212124;
+            --border: #29292d;
+            --border-soft: #212124;
+            --text: #f2f2f3;
+            --text-muted: #9a9aa3;
+            --text-faint: #6c6c74;
+            --accent: #2563eb;
+            --accent-bright: #4c7dfb;
+            --accent-dim: rgba(37, 99, 235, 0.14);
+            --accent-ring: rgba(37, 99, 235, 0.35);
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 9px;
+            --maxw: 1160px;
+            --font-display: 'Space Grotesk', 'Inter', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+            position: relative;
+        }
+
+        /* Animated grid background pattern & ambient glowing light blobs */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image:
+                linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+            background-size: 45px 45px;
+            z-index: -2;
+            pointer-events: none;
+            animation: gridMove 20s linear infinite;
+            mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 85%);
+            -webkit-mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 85%);
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            top: -20%;
+            left: 20%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, rgba(139, 92, 246, 0.06) 40%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(80px);
+            animation: ambientFloat 14s ease-in-out infinite alternate;
+        }
+
+        @keyframes gridMove {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 45px 45px;
+            }
+        }
+
+        @keyframes ambientFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(-10%, 15%) scale(1.15);
+            }
+
+            100% {
+                transform: translate(15%, -10%) scale(0.95);
+            }
+        }
+
+        img,
+        svg {
+            display: block;
+            max-width: 100%;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: var(--font-display);
+            margin: 0;
+            letter-spacing: -0.02em;
+            font-weight: 600;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        .wrap {
+            max-width: var(--maxw);
+            margin: 0 auto;
+            padding: 0 32px;
+        }
+
+        section {
+            position: relative;
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--accent-bright);
+            outline-offset: 3px;
+            border-radius: 4px;
+        }
+
+        /* ---------- Buttons ---------- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 13px 24px;
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 15px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
+            white-space: nowrap;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-bright);
+            box-shadow: 0 8px 24px -8px rgba(37, 99, 235, 0.65);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border-color: var(--border);
+            color: var(--text);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--accent);
+            color: var(--accent-bright);
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        /* ---------- Nav ---------- */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(15, 15, 15, 0.78);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-soft);
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 32px;
+            max-width: var(--maxw);
+            margin: 0 auto;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 18px;
+            letter-spacing: -0.01em;
+        }
+
+        .logo-img {
+            height: 34px;
+            width: auto;
+            object-fit: contain;
+            border-radius: 6px;
+            display: block;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            font-size: 14.5px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        .nav-cta {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        @media (max-width: 780px) {
+            .nav-links {
+                display: none;
+            }
+        }
+
+        /* ---------- Hero ---------- */
+        .hero {
+            padding: 88px 0 100px;
+            overflow: hidden;
+        }
+
+        .hero-inner {
+            display: grid;
+            grid-template-columns: 1fr 1.15fr;
+            gap: 64px;
+            align-items: center;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent-bright);
+            margin-bottom: 18px;
+        }
+
+        .eyebrow-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-bright);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.35;
+            }
+        }
+
+        .hero h1 {
+            font-size: clamp(34px, 4.6vw, 54px);
+            line-height: 1.06;
+        }
+
+        .hero h1 span {
+            color: var(--accent-bright);
+        }
+
+        .hero-sub {
+            margin-top: 20px;
+            font-size: 17px;
+            line-height: 1.65;
+            color: var(--text-muted);
+            max-width: 480px;
+        }
+
+        .hero-actions {
+            margin-top: 34px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .hero-note {
+            margin-top: 18px;
+            font-size: 13px;
+            color: var(--text-faint);
+        }
+
+        /* ---------- Hero visual: Real App Screenshot Frame ---------- */
+        .app-screenshot-hero-wrapper {
+            position: relative;
+            perspective: 1200px;
+        }
+
+        .app-screenshot-frame {
+            position: relative;
+            background: rgba(21, 21, 23, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: 0 30px 100px -20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(37, 99, 235, 0.15);
+            transform: rotateY(-6deg) rotateX(4deg) scale(0.98);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease;
+        }
+
+        .app-screenshot-frame:hover {
+            transform: rotateY(0deg) rotateX(0deg) scale(1.02);
+            box-shadow: 0 40px 120px -20px rgba(0, 0, 0, 0.9), 0 0 60px rgba(37, 99, 235, 0.3);
+        }
+
+        .app-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #111113;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px 16px;
+        }
+
+        .topbar-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .topbar-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .topbar-dot.r {
+            background: #ff5f56;
+        }
+
+        .topbar-dot.y {
+            background: #ffbd2e;
+        }
+
+        .topbar-dot.g {
+            background: #27c93f;
+        }
+
+        .topbar-url {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 3px 14px;
+            font-size: 11.5px;
+            color: var(--text-muted);
+            font-family: var(--font-body);
+        }
+
+        .topbar-pill {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            background: rgba(37, 99, 235, 0.2);
+            color: var(--accent-bright);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .app-screenshot-img-box {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-screenshot-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+        }
+
+        .floating-pill-ai {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(15, 15, 17, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            padding: 10px 16px;
+            border-radius: 12px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: floatPill 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatPill {
+            0% {
+                transform: translateY(0);
+            }
+
+            100% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .floating-pill-score {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 800;
+            color: #10b981;
+            line-height: 1;
+        }
+
+        .floating-pill-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .floating-pill-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .floating-pill-sub {
+            font-size: 10.5px;
+            color: var(--text-muted);
+        }
+
+        .feed-mock-topbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .feed-mock-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--border);
+        }
+
+        .feed-search {
+            flex: 1;
+            margin-left: 6px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 8px 14px;
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        .feed-search svg {
+            flex-shrink: 0;
+            opacity: 0.6;
+        }
+
+        .feed-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .thumb-card {
+            position: relative;
+            border-radius: var(--radius-sm);
+            overflow: visible;
+        }
+
+        .thumb-img {
+            position: relative;
+            aspect-ratio: 16/9;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            background: linear-gradient(135deg, #2a2a30, #1a1a1d);
+        }
+
+        .thumb-img::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.15));
+        }
+
+        .thumb-time {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            font-size: 9.5px;
+            font-weight: 600;
+            padding: 1px 5px;
+            border-radius: 4px;
+            z-index: 2;
+        }
+
+        .thumb-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .thumb-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--surface-hover);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .thumb-lines {
+            flex: 1;
+        }
+
+        .line {
+            height: 6px;
+            border-radius: 3px;
+            background: var(--surface-hover);
+            margin-bottom: 5px;
+        }
+
+        .line.w-90 {
+            width: 90%;
+        }
+
+        .line.w-70 {
+            width: 70%;
+        }
+
+        .line.w-50 {
+            width: 50%;
+        }
+
+        .line.w-60 {
+            width: 60%;
+        }
+
+        .t1 .thumb-img {
+            background: linear-gradient(135deg, #3a2f22, #211a13);
+        }
+
+        .t2 .thumb-img {
+            background: linear-gradient(135deg, #20303a, #141c21);
+        }
+
+        .t4 .thumb-img {
+            background: linear-gradient(135deg, #2a2137, #191420);
+        }
+
+        .thumb-card.is-you .thumb-img {
+            outline: 2px solid var(--accent-bright);
+            outline-offset: 2px;
+            background: linear-gradient(135deg, #213a5e, #152238);
+        }
+
+        .you-tag {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 9.5px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            padding: 2px 7px;
+            border-radius: 5px;
+            z-index: 2;
+        }
+
+        .corner {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--accent-bright);
+            z-index: 3;
+        }
+
+        .corner.tl {
+            top: -3px;
+            left: -3px;
+            border-right: none;
+            border-bottom: none;
+            border-top-left-radius: 5px;
+        }
+
+        .corner.br {
+            bottom: -3px;
+            right: -3px;
+            border-left: none;
+            border-top: none;
+            border-bottom-right-radius: 5px;
+        }
+
+        .ai-callout {
+            position: absolute;
+            left: -34px;
+            bottom: -30px;
+            width: 236px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            box-shadow: 0 20px 50px -18px rgba(0, 0, 0, 0.7);
+            animation: float-in 0.8s ease-out both;
+        }
+
+        @keyframes float-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ai-callout-head {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--accent-bright);
+            margin-bottom: 7px;
+        }
+
+        .ai-callout-head .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-bright);
+            animation: pulse-dot 1.8s ease-in-out infinite;
+        }
+
+        .ai-callout p {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 940px) {
+            .hero-inner {
+                grid-template-columns: 1fr;
+            }
+
+            .ai-callout {
+                position: static;
+                width: auto;
+                margin-top: 40px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .feed-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ---------- Section headers ---------- */
+        .section-head {
+            max-width: 560px;
+            margin: 0 auto 56px;
+            text-align: center;
+        }
+
+        .section-head h2 {
+            font-size: clamp(26px, 3.6vw, 36px);
+            line-height: 1.15;
+        }
+
+        .section-head p {
+            margin-top: 14px;
+            color: var(--text-muted);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .section-eyebrow {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent-bright);
+            margin-bottom: 12px;
+        }
+
+        /* ---------- How it works ---------- */
+        .how {
+            padding: 120px 0;
+            border-top: 1px solid var(--border-soft);
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            position: relative;
+        }
+
+        .step {
+            position: relative;
+            padding: 0 26px;
+            text-align: left;
+        }
+
+        .step:first-child {
+            padding-left: 0;
+        }
+
+        .step:last-child {
+            padding-right: 0;
+        }
+
+        .step-connector {
+            position: absolute;
+            top: 23px;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(37, 99, 235, 0.6), var(--border) 80%);
+            pointer-events: none;
+        }
+
+        .step:first-child .step-connector {
+            left: 58px;
+            width: calc(100% - 44px);
+        }
+
+        .step:nth-child(2) .step-connector {
+            left: 84px;
+            width: calc(100% - 70px);
+        }
+
+        .step:last-child .step-connector {
+            display: none;
+        }
+
+        .step-index {
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--accent-bright);
+            background: var(--accent-dim);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 22px;
+        }
+
+        .step h3 {
+            font-size: 19px;
+            margin-bottom: 10px;
+        }
+
+        .step p {
+            color: var(--text-muted);
+            font-size: 14.5px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 780px) {
+            .steps {
+                grid-template-columns: 1fr;
+                gap: 36px;
+            }
+
+            .step {
+                padding: 0;
+            }
+
+            .step-connector {
+                display: none;
+            }
+        }
+
+        /* ---------- Features ---------- */
+        .features {
+            padding: 0 0 120px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
+
+        .feature-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 28px;
+            transition: border-color .2s ease, transform .2s ease;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(37, 99, 235, 0.4);
+            transform: translateY(-3px);
+        }
+
+        .feature-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 17.5px;
+            margin-bottom: 9px;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 14.5px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 700px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ---------- Pricing ---------- */
+        .pricing {
+            padding: 0 0 130px;
+        }
+
+        .price-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1040px;
+            margin: 0 auto;
+        }
+
+        .price-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 34px 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .price-card.is-pro {
+            border-color: rgba(37, 99, 235, 0.5);
+            background: linear-gradient(180deg, rgba(37, 99, 235, 0.08), var(--bg-elevated) 60%);
+            position: relative;
+        }
+
+        .price-badge {
+            position: absolute;
+            top: -13px;
+            left: 30px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 100px;
+        }
+
+        .price-plan {
+            font-size: 14.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .price-amount {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .price-amount .num {
+            font-family: var(--font-display);
+            font-size: 42px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .price-amount .period {
+            color: var(--text-faint);
+            font-size: 14px;
+        }
+
+        .price-desc {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 26px;
+        }
+
+        .price-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 13px;
+            flex: 1;
+        }
+
+        .price-features li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 14.5px;
+            color: var(--text);
+        }
+
+        .price-features svg {
+            flex-shrink: 0;
+            margin-top: 2px;
+            color: var(--accent-bright);
+        }
+
+        @media (max-width: 700px) {
+            .price-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ---------- CTA banner ---------- */
+        .cta-banner {
+            padding: 0 0 130px;
+        }
+
+        .cta-banner-inner {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), var(--bg-elevated) 70%);
+            border: 1px solid rgba(37, 99, 235, 0.35);
+            border-radius: var(--radius-lg);
+            padding: 56px 48px;
+            text-align: center;
+        }
+
+        .cta-banner-inner h2 {
+            font-size: clamp(24px, 3.2vw, 32px);
+            margin-bottom: 14px;
+        }
+
+        .cta-banner-inner p {
+            color: var(--text-muted);
+            font-size: 16px;
+            max-width: 480px;
+            margin: 0 auto 28px;
+        }
+
+        /* ---------- Footer ---------- */
+        footer {
+            border-top: 1px solid var(--border-soft);
+            padding: 52px 0 34px;
+        }
+
+        .footer-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 40px;
+            padding-bottom: 36px;
+        }
+
+        .footer-brand p {
+            margin-top: 12px;
+            color: var(--text-faint);
+            font-size: 13.5px;
+            max-width: 260px;
+            line-height: 1.6;
+        }
+
+        .footer-cols {
+            display: flex;
+            gap: 64px;
+            flex-wrap: wrap;
+        }
+
+        .footer-col h4 {
+            font-size: 12.5px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+            margin-bottom: 16px;
+        }
+
+        .footer-col ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .footer-col a {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .footer-col a:hover {
+            color: var(--text);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid var(--border-soft);
+            padding-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-faint);
+        }
+
+        /* ---------- Scroll reveal ---------- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+
+        .reveal.reveal-scale {
+            transform: scale(0.95) translateY(20px);
+        }
+
+        .reveal.reveal-left {
+            transform: translateX(-30px);
+        }
+
+        .reveal.reveal-right {
+            transform: translateX(30px);
+        }
+
+        .reveal.is-visible {
+            opacity: 1;
+            transform: translate(0, 0) scale(1);
+        }
+
+        .delay-1 {
+            transition-delay: 0.12s;
+        }
+
+        .delay-2 {
+            transition-delay: 0.24s;
+        }
+
+        .delay-3 {
+            transition-delay: 0.36s;
+        }
+
+        .delay-4 {
+            transition-delay: 0.48s;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+
+            .reveal {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+
+            .eyebrow-dot,
+            .live-dot {
+                animation: none;
+            }
+
+            .ai-callout {
+                animation: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="nav">
+        <div class="nav-inner">
+            <a class="brand" href="#top">
+                <img src="assets/logo.png" alt="ThumbnailSpy Logo" class="logo-img">
+                ThumbnailSpy
+            </a>
+            <div class="nav-links">
+                <a href="#how">How it works</a>
+                <a href="#features">Features</a>
+                <a href="#pricing">Pricing</a>
+            </div>
+            <div class="nav-cta">
+                <button class="btn btn-primary" onclick="showAuthModal()">Try It Free</button>
+            </div>
+        </div>
+    </nav>
+
+    <main id="top">
+
+        <!-- HERO -->
+        <section class="hero">
+            <div class="wrap hero-inner">
+
+                <!-- LEFT: Text Copy -->
+                <div class="hero-copy reveal reveal-left">
+                    <span class="eyebrow"><span class="eyebrow-dot"></span> Thumbnail intelligence for creators</span>
+                    <h1>Stop guessing. <span>Spy on the feed.</span></h1>
+                    <p class="hero-sub">Upload your thumbnail, enter a keyword, and see it sitting right next to the
+                        videos already winning that search — then let Gemini tell you exactly what to fix before you
+                        publish.</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" onclick="showAuthModal()">Try It Free</button>
+                        <a class="btn btn-ghost" href="#how">See how it works</a>
+                    </div>
+                    <p class="hero-note">No credit card. No fake numbers here — just your thumbnail, the real feed, and
+                        honest feedback.</p>
+                </div>
+
+                <!-- RIGHT: App Screenshot -->
+                <div class="app-screenshot-hero-wrapper reveal reveal-right delay-1">
+                    <div class="app-screenshot-frame">
+                        <div class="app-topbar">
+                            <div class="topbar-dots">
+                                <span class="topbar-dot r"></span>
+                                <span class="topbar-dot y"></span>
+                                <span class="topbar-dot g"></span>
+                            </div>
+                            <div class="topbar-url">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                                thumbnailspy.netlify.app
+                            </div>
+                            <span class="topbar-pill">LIVE APP</span>
+                        </div>
+                        <div class="app-screenshot-img-box">
+                            <img src="assets/APP.png" alt="ThumbnailSpy AI Workspace Dashboard"
+                                class="app-screenshot-img">
+                            <div class="floating-pill-ai">
+                                <div class="floating-pill-score">8.2</div>
+                                <div class="floating-pill-text">
+                                    <span class="floating-pill-title">High CTR Potential</span>
+                                    <span class="floating-pill-sub">Benchmarked vs 10 competitors</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- HOW IT WORKS -->
+        <section class="how" id="how">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <span class="section-eyebrow">The process</span>
+                    <h2>From upload to insight in three steps</h2>
+                    <p>No guesswork, no vague "make it pop" advice. Just your thumbnail measured against the competition
+                        it actually faces.</p>
+                </div>
+
+                <div class="steps">
+                    <div class="step reveal reveal-scale delay-1">
+                        <span class="step-connector"></span>
+                        <div class="step-index">01</div>
+                        <h3>Upload &amp; Search</h3>
+                        <p>Drop in your thumbnail and the keyword you're targeting — the same one viewers would type
+                            into YouTube.</p>
+                    </div>
+                    <div class="step reveal reveal-scale delay-2">
+                        <span class="step-connector"></span>
+                        <div class="step-index">02</div>
+                        <h3>Preview in the Feed</h3>
+                        <p>We place your thumbnail inside a mock search results page, right alongside real thumbnails
+                            currently ranking for that keyword.</p>
+                    </div>
+                    <div class="step reveal reveal-scale delay-3">
+                        <div class="step-index">03</div>
+                        <h3>Get AI Feedback</h3>
+                        <p>Gemini reviews the full matchup and tells you specifically what to change — contrast,
+                            composition, text size, framing — to earn the click.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURES -->
+        <section class="features" id="features">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <span class="section-eyebrow">What you get</span>
+                    <h2>Built around one question</h2>
+                    <p>Will this thumbnail win the click against what's already there? Every feature exists to answer
+                        that.</p>
+                </div>
+
+                <div class="feature-grid">
+                    <div class="feature-card reveal reveal-scale delay-1">
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="5" width="18" height="14" rx="2" stroke="#4c7dfb" stroke-width="1.8" />
+                                <path d="M3 9h18" stroke="#4c7dfb" stroke-width="1.8" />
+                                <circle cx="8" cy="7" r="0.9" fill="#4c7dfb" />
+                            </svg>
+                        </div>
+                        <h3>Live Preview</h3>
+                        <p>See your thumbnail rendered exactly how YouTube crops and sizes it, sitting inside a
+                            realistic search results layout.</p>
+                    </div>
+
+                    <div class="feature-card reveal reveal-scale delay-2">
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 3l2.2 5.4L20 10l-5.4 2.2L12 18l-2.2-5.8L4 10l5.8-1.6L12 3z"
+                                    stroke="#4c7dfb" stroke-width="1.6" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3>AI Analysis</h3>
+                        <p>Gemini compares your thumbnail against the competing videos and gives direct, specific notes
+                            — not generic advice.</p>
+                    </div>
+
+                    <div class="feature-card reveal reveal-scale delay-3">
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="6" width="7" height="12" rx="1.5" stroke="#4c7dfb" stroke-width="1.8" />
+                                <rect x="14" y="6" width="7" height="12" rx="1.5" stroke="#4c7dfb" stroke-width="1.8" />
+                                <path d="M10.5 12h3" stroke="#4c7dfb" stroke-width="1.8" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <h3>A/B Compare</h3>
+                        <p>Test two thumbnail versions side by side in the same feed and see which one actually holds
+                            attention.</p>
+                    </div>
+
+                    <div class="feature-card reveal reveal-scale delay-4">
+                        <div class="feature-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <rect x="7.5" y="2.5" width="9" height="19" rx="1.8" stroke="#4c7dfb"
+                                    stroke-width="1.8" />
+                                <path d="M11 19.2h2" stroke="#4c7dfb" stroke-width="1.8" stroke-linecap="round" />
+                            </svg>
+                        </div>
+                        <h3>Device Preview</h3>
+                        <p>Check how your thumbnail reads on a phone screen, where most of your viewers are actually
+                            scrolling.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PRICING -->
+        <section class="pricing" id="pricing">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <span class="section-eyebrow">Pricing</span>
+                    <h2>Start free. Upgrade when it's paying off.</h2>
+                    <p>No tiers designed to confuse you — just enough room to test the idea, then room to use it every
+                        week.</p>
+                </div>
+
+                <div class="price-grid">
+                    <!-- FREE TIER -->
+                    <div class="price-card reveal reveal-scale delay-1">
+                        <div class="price-plan">Free</div>
+                        <div class="price-amount"><span class="num">$0</span><span class="period">/ month</span></div>
+                        <p class="price-desc">For creators testing the waters before every upload.</p>
+                        <ul class="price-features">
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> 7 feed previews per month (refilled monthly)</li>
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> Basic AI feedback</li>
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> Desktop preview only</li>
+                        </ul>
+                        <button class="btn btn-ghost btn-block" onclick="showAuthModal()">Start Free</button>
+                    </div>
+
+                    <!-- PRO TIER -->
+                    <div class="price-card reveal reveal-scale delay-2">
+                        <div class="price-plan">Pro</div>
+                        <div class="price-amount"><span class="num">$19</span><span class="period">/ month</span></div>
+                        <p class="price-desc">For active creators who publish weekly videos.</p>
+                        <ul class="price-features">
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> Unlimited feed previews</li>
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> Gemini Vision AI analysis</li>
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> Desktop + Mobile Viewport</li>
+                        </ul>
+                        <button class="btn btn-ghost btn-block"
+                            onclick="showCheckoutModal('Pro Monthly Plan', '$19/mo', 'Unlimited previews billed monthly.')">Go
+                            Pro ($19/mo)</button>
+                    </div>
+
+                    <!-- LIFETIME DEAL TIER -->
+                    <div class="price-card is-pro reveal reveal-scale delay-3">
+                        <span class="price-badge">🔥 Founder Lifetime Deal</span>
+                        <div class="price-plan">Lifetime Pass</div>
+                        <div class="price-amount"><span class="num">$30</span><span class="period">/ one-time</span>
+                        </div>
+                        <p class="price-desc">Pay once, use forever. Never worry about monthly subscriptions.</p>
+                        <ul class="price-features">
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> <strong>Unlimited Lifetime Previews</strong></li>
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> Gemini 3.6 Vision AI analysis</li>
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> Desktop & Mobile views</li>
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> Eye-Tracking Heatmap Overlay</li>
+                            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="2.2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg> Priority processing forever</li>
+                        </ul>
+                        <button class="btn btn-primary btn-block"
+                            onclick="showCheckoutModal('$30 Lifetime Pass', '$30', 'One-time payment for lifetime unlimited feed previews.')">Get
+                            Lifetime Pass ($30)</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA BANNER -->
+        <section class="cta-banner">
+            <div class="wrap">
+                <div class="cta-banner-inner reveal">
+                    <h2>Your next upload deserves better odds.</h2>
+                    <p>See exactly where your thumbnail stands before it goes live — not after the views come in slow.
+                    </p>
+                    <button class="btn btn-primary" onclick="showAuthModal()">Try It Free</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="wrap">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <a class="brand" href="#top">
+                        <img src="assets/logo.png" alt="ThumbnailSpy Logo" class="logo-img">
+                        ThumbnailSpy
+                    </a>
+                    <p>Stop guessing. Spy on the feed. See your thumbnail the way viewers will, before you publish.</p>
+                </div>
+
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h4>Product</h4>
+                        <ul>
+                            <li><a href="#how">How it works</a></li>
+                            <li><a href="#features">Features</a></li>
+                            <li><a href="#pricing">Pricing</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Legal & Policy</h4>
+                        <ul>
+                            <li><a href="privacy.html">Privacy Policy</a></li>
+                            <li><a href="terms.html">Terms of Service</a></li>
+                            <li><a href="refund.html">Refund Policy</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <span>© 2026 ThumbnailSpy. All rights reserved.</span>
+                <span>Built for creators who'd rather know than guess.</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth-modal.js"></script>
+
+    <script>
+        // Scroll-reveal for sections
+        (function () {
+            var els = document.querySelectorAll('.reveal');
+            if (!('IntersectionObserver' in window)) {
+                els.forEach(function (el) { el.classList.add('is-visible'); });
+                return;
+            }
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+            els.forEach(function (el) { observer.observe(el); });
+        })();
+    </script>
+
+</body>
+
+</html>

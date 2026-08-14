@@ -1,0 +1,3241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ThumbnailSpy — Workspace</title>
+    <meta name="description"
+        content="Upload your YouTube thumbnail, preview it inside a real search feed next to competitors, and get AI feedback on exactly what to fix." />
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/png" href="assets/FAVICON/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="assets/FAVICON/favicon.svg" />
+    <link rel="shortcut icon" href="assets/FAVICON/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/FAVICON/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="ThumbnailSpy" />
+    <link rel="manifest" href="assets/FAVICON/site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script async src="https://tally.so/widgets/embed.js"></script>
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --bg-elevated: #151517;
+            --surface: #1b1b1e;
+            --surface-hover: #212124;
+            --border: #29292d;
+            --border-soft: #212124;
+            --text: #f2f2f3;
+            --text-muted: #9a9aa3;
+            --text-faint: #6c6c74;
+            --accent: #2563eb;
+            --accent-bright: #4c7dfb;
+            --accent-dim: rgba(37, 99, 235, 0.14);
+            --accent-ring: rgba(37, 99, 235, 0.35);
+            --radius-lg: 8px;
+            --radius-md: 6px;
+            --radius-sm: 4px;
+            --maxw: 1200px;
+            --font-display: 'Space Grotesk', 'Inter', sans-serif;
+            --font-body: 'Inter', sans-serif;
+
+            /* Feedback colors */
+            --color-success: #10b981;
+            --color-success-dim: rgba(16, 185, 129, 0.1);
+            --color-error: #ef4444;
+            --color-error-dim: rgba(239, 68, 68, 0.1);
+            --color-warning: #f59e0b;
+            --color-warning-dim: rgba(245, 158, 11, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated grid background pattern & ambient glowing light blobs */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image:
+                linear-gradient(rgba(37, 99, 235, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(37, 99, 235, 0.04) 1px, transparent 1px);
+            background-size: 45px 45px;
+            z-index: -2;
+            pointer-events: none;
+            animation: gridMove 20s linear infinite;
+            mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 90%);
+            -webkit-mask-image: radial-gradient(ellipse at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 90%);
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            top: -20%;
+            left: 30%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, rgba(139, 92, 246, 0.04) 40%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+            filter: blur(100px);
+            animation: ambientFloat 16s ease-in-out infinite alternate;
+        }
+
+        @keyframes gridMove {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 45px 45px;
+            }
+        }
+
+        @keyframes ambientFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(-5%, 10%) scale(1.1);
+            }
+
+            100% {
+                transform: translate(10%, -5%) scale(0.95);
+            }
+        }
+
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: var(--font-display);
+            margin: 0;
+            letter-spacing: -0.01em;
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 14px;
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 13px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all .15s ease;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .btn .lucide {
+            width: 14px;
+            height: 14px;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-bright);
+            box-shadow: 0 4px 16px -4px rgba(37, 99, 235, 0.6);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border-color: var(--border);
+            color: var(--text);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--accent);
+            color: var(--accent-bright);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: var(--color-error);
+            color: white;
+        }
+
+        /* Nav */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(15, 15, 15, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-soft);
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 24px;
+            max-width: var(--maxw);
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .logo-img {
+            height: 32px;
+            width: auto;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .usage-badge {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            padding: 5px 10px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .usage-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-bright);
+        }
+
+        .usage-dot.limit-warning {
+            background: var(--color-warning);
+            animation: pulse-warning 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-warning {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* Demo mode banner */
+        .demo-banner {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.15) 0%, rgba(37, 99, 235, 0.05) 100%);
+            border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+            padding: 8px 24px;
+            text-align: center;
+            font-size: 13px;
+            color: #f59e0b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+
+        .demo-banner button {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .demo-banner button:hover {
+            background: rgba(245, 158, 11, 0.35);
+        }
+
+        /* Main Workspace Grid */
+        .workspace {
+            flex: 1;
+            max-width: var(--maxw);
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 24px;
+            transition: grid-template-columns 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .workspace.results-active {
+            grid-template-columns: 60px 1fr;
+            max-width: 1600px;
+        }
+
+        .workspace.results-active.setup-expanded {
+            grid-template-columns: 420px 1fr;
+        }
+
+        /* Left Side: Setup Panel */
+        .setup-panel {
+            position: relative;
+            background: var(--bg);
+            border-right: 1px solid transparent;
+            transition: border-color 0.4s;
+        }
+
+        .workspace.results-active .setup-panel {
+            border-right: 1px solid var(--border);
+        }
+
+        .setup-panel-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 420px;
+            transition: opacity 0.2s, transform 0.4s;
+            transform-origin: top left;
+        }
+
+        .workspace.results-active:not(.setup-expanded) .setup-panel-content {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95);
+        }
+
+        /* Desktop toggle strip (only shows when results are active) */
+        .setup-toggle-container {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            align-items: center;
+            justify-content: center;
+            padding-top: 12px;
+            z-index: 10;
+        }
+
+        .workspace.results-active .setup-toggle-container {
+            display: flex;
+        }
+
+        .workspace.results-active.setup-expanded .setup-toggle-container {
+            justify-content: flex-end;
+            padding-right: 12px;
+        }
+
+        /* The desktop sidebar toggle button */
+        .setup-toggle-btn {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .setup-toggle-btn:hover {
+            color: var(--text);
+            border-color: var(--accent);
+            background: var(--surface);
+        }
+
+        .setup-toggle-btn .lucide {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Mobile Floating Action Button — replaces the three-bar on mobile */
+        .mobile-fab {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 300;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.55), 0 2px 8px rgba(0,0,0,0.4);
+            transition: all 0.2s ease;
+        }
+
+        .mobile-fab:hover {
+            background: var(--accent-bright);
+            transform: scale(1.08);
+            box-shadow: 0 6px 24px rgba(37, 99, 235, 0.7);
+        }
+
+        .mobile-fab .lucide {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* Mobile slide-up drawer backdrop */
+        .mobile-drawer-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .mobile-drawer-backdrop.open {
+            opacity: 1;
+        }
+
+        /* Mobile slide-up drawer */
+        .mobile-drawer {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 250;
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--border);
+            border-radius: 20px 20px 0 0;
+            padding: 0 0 env(safe-area-inset-bottom, 0);
+            max-height: 92dvh;
+            overflow-y: auto;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 -12px 40px rgba(0,0,0,0.5);
+        }
+
+        .mobile-drawer.open {
+            transform: translateY(0);
+        }
+
+        .mobile-drawer-handle {
+            display: flex;
+            justify-content: center;
+            padding: 14px 0 8px;
+        }
+
+        .mobile-drawer-handle-bar {
+            width: 40px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .mobile-drawer-content {
+            padding: 0 16px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-title {
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--accent-bright);
+            margin-bottom: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-sm);
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            background: rgba(27, 27, 30, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(37, 99, 235, 0.08);
+            transform: scale(0.99);
+        }
+
+        .upload-icon {
+            color: var(--text-faint);
+            transition: color 0.2s;
+        }
+
+        .upload-zone:hover .upload-icon {
+            color: var(--accent-bright);
+        }
+
+        .upload-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .upload-text span {
+            color: var(--accent-bright);
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            font-size: 11px;
+            color: var(--text-faint);
+        }
+
+        .file-input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Preview State inside Upload zone */
+        .image-preview-container {
+            width: 100%;
+            position: relative;
+            aspect-ratio: 16/9;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #000;
+        }
+
+        .preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .remove-img-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(15, 15, 17, 0.85);
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .remove-img-btn:hover {
+            background: var(--color-error);
+            color: #fff;
+            border-color: var(--color-error);
+            transform: scale(1.1);
+        }
+
+        /* Keyword Form */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .input-text {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 14px;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .input-text:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-ring);
+        }
+
+        .spy-btn {
+            width: 100%;
+            padding: 10px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--accent);
+            border: none;
+            color: white;
+            font-weight: 700;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .spy-btn .lucide {
+            width: 15px;
+            height: 15px;
+        }
+
+        .spy-btn:hover:not(:disabled) {
+            background: var(--accent-bright);
+            box-shadow: 0 4px 20px -2px rgba(37, 99, 235, 0.7);
+        }
+
+        .spy-btn:disabled {
+            background: var(--border);
+            color: var(--text-faint);
+            cursor: not-allowed;
+        }
+
+        /* Right Side: Workspace Viewer */
+        .viewer-panel {
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* States: Empty, Loading, Results */
+        .state-container {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            border: 1px solid var(--border);
+            background: var(--bg-elevated);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .state-container.active {
+            display: flex;
+        }
+
+        /* Empty state styling */
+        .empty-state {
+            border: 2px dashed var(--border);
+            background: rgba(21, 21, 23, 0.4);
+            backdrop-filter: blur(8px);
+        }
+
+        .empty-graphic {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            color: var(--accent-bright);
+        }
+
+        .empty-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .empty-desc {
+            color: var(--text-muted);
+            font-size: 14.5px;
+            max-width: 420px;
+            line-height: 1.6;
+            margin-bottom: 0;
+        }
+
+        /* Loading state styling */
+        .loading-state {
+            background: rgba(21, 21, 23, 0.8);
+            border-color: var(--border);
+        }
+
+        .loader-ring {
+            width: 64px;
+            height: 64px;
+            border: 4px solid var(--surface);
+            border-top: 4px solid var(--accent-bright);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 28px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .loading-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 320px;
+            text-align: left;
+        }
+
+        .loading-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13.5px;
+            color: var(--text-faint);
+            transition: all 0.3s;
+        }
+
+        .loading-step.active {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .loading-step.completed {
+            color: var(--color-success);
+        }
+
+        .step-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .step-icon-spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid transparent;
+            border-top-color: var(--accent-bright);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Results / Feed view styling */
+        .results-view {
+            display: none;
+            /* Hide via display until active */
+            opacity: 0;
+            transform: translateY(12px);
+            transition: all 0.4s ease;
+        }
+
+        .workspace.results-active .results-view {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
+        }
+
+        .results-view.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Mock YouTube Search Results Container */
+        .yt-search-container {
+            background: #0f0f0f;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        /* YouTube Search Header */
+        .yt-header {
+            background: #0f0f0f;
+            border-bottom: 1px solid #272727;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: nowrap;
+        }
+
+        .yt-search-row {
+            background: #0f0f0f;
+            border-bottom: 1px solid #1a1a1a;
+            padding: 8px 18px 12px;
+        }
+
+        .yt-logo {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.03em;
+            color: #fff;
+        }
+
+        .yt-logo-box {
+            background: #ff0000;
+            color: #fff;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: var(--font-body);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .yt-search-bar {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            background: #121212;
+            border: 1px solid #303030;
+            border-radius: 40px;
+            padding: 0 4px 0 16px;
+            height: 36px;
+        }
+
+        .yt-search-input {
+            background: transparent;
+            border: none;
+            color: #f1f1f1;
+            font-size: 14px;
+            width: 100%;
+            height: 100%;
+            outline: none;
+        }
+
+        .yt-search-btn {
+            background: #222;
+            border: none;
+            border-left: 1px solid #303030;
+            color: #f1f1f1;
+            width: 60px;
+            height: 100%;
+            border-radius: 0 40px 40px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .yt-search-filters {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Demo Mode Badge */
+        .demo-mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(245, 158, 11, 0.12);
+            color: var(--color-warning);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
+        .demo-mode-badge .lucide {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* CTR Score Banner inside Diagnostics Panel */
+        .score-banner {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(15, 15, 17, 0.6) 80%);
+            border-bottom: 1px solid var(--border-soft);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .score-main {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .score-circle-container {
+            position: relative;
+            width: 72px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .score-svg {
+            width: 72px;
+            height: 72px;
+            transform: rotate(-90deg);
+        }
+
+        .score-bg-circle {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.08);
+            stroke-width: 7;
+        }
+
+        .score-progress-circle {
+            fill: none;
+            stroke: var(--accent-bright);
+            stroke-width: 7;
+            stroke-linecap: round;
+            stroke-dasharray: 264;
+            stroke-dashoffset: 60;
+            transition: stroke-dashoffset 1s ease, stroke 0.4s ease;
+        }
+
+        .score-number-display {
+            position: absolute;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-weight: 700;
+        }
+
+        #scoreValue {
+            font-size: 20px;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .score-denom {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .score-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .score-badge {
+            align-self: flex-start;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(37, 99, 235, 0.2);
+            color: var(--accent-bright);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            transition: all 0.3s;
+        }
+
+        .score-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .score-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        /* YouTube Search Results List */
+        .yt-results-list {
+            padding: 16px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* Custom Scrollbar for results list */
+        .yt-results-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .yt-results-list::-webkit-scrollbar-track {
+            background: #0f0f0f;
+        }
+
+        .yt-results-list::-webkit-scrollbar-thumb {
+            background: #272727;
+            border-radius: 4px;
+        }
+
+        .yt-results-list::-webkit-scrollbar-thumb:hover {
+            background: #373737;
+        }
+
+        /* YouTube Search Result Card */
+        .yt-card {
+            display: flex;
+            gap: 14px;
+            position: relative;
+            border-radius: var(--radius-md);
+            padding: 10px;
+            transition: background 0.15s;
+        }
+
+        .yt-card:hover:not(.is-you) {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .yt-card-thumbnail {
+            width: 240px;
+            aspect-ratio: 16/9;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+            background: #111;
+        }
+
+        .yt-card-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .yt-card-duration {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 4px;
+            border-radius: 4px;
+            z-index: 2;
+        }
+
+        .yt-card-content {
+            flex: 1;
+            display: flex;
+            gap: 12px;
+            padding-top: 2px;
+            min-width: 0;
+        }
+
+        .yt-mobile-avatar-col {
+            display: none;
+        }
+
+        .yt-card-main-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .yt-card-title {
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.35;
+            color: #f1f1f1;
+            margin: 0;
+            word-break: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .yt-card-channel-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12.5px;
+            color: #aaa;
+            margin: 2px 0;
+            flex-wrap: wrap;
+        }
+
+        .yt-channel-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--surface-hover);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .yt-channel-name {
+            font-size: 13px;
+            color: #aaa;
+            font-weight: 400;
+        }
+
+        .yt-meta-dot {
+            color: #777;
+            font-size: 10px;
+        }
+
+        .yt-card-description {
+            font-size: 12.5px;
+            color: #aaa;
+            line-height: 1.4;
+            margin: 2px 0 0 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Special Styling for user video (Position 1) */
+        .yt-card.is-you {
+            border: 1px solid var(--accent);
+            background: rgba(37, 99, 235, 0.03);
+            border-radius: var(--radius-md);
+            padding: 12px;
+        }
+
+        .you-corner {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--accent-bright);
+            z-index: 5;
+        }
+
+        .you-corner.tl {
+            top: -2px;
+            left: -2px;
+            border-right: none;
+            border-bottom: none;
+            border-top-left-radius: 6px;
+        }
+
+        .you-corner.tr {
+            top: -2px;
+            right: -2px;
+            border-left: none;
+            border-bottom: none;
+            border-top-right-radius: 6px;
+        }
+
+        .you-corner.bl {
+            bottom: -2px;
+            left: -2px;
+            border-right: none;
+            border-top: none;
+            border-bottom-left-radius: 6px;
+        }
+
+        .you-corner.br {
+            bottom: -2px;
+            right: -2px;
+            border-left: none;
+            border-top: none;
+            border-bottom-right-radius: 6px;
+        }
+
+        .you-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            padding: 2px 7px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+            z-index: 6;
+        }
+
+        /* Editable fields styled like real YouTube text */
+        .editable {
+            outline: none;
+            border: 1px dashed transparent;
+            border-radius: 4px;
+            transition: all 0.2s;
+            position: relative;
+            cursor: pointer;
+            padding-right: 18px;
+        }
+
+        .editable::after {
+            content: "✎";
+            position: absolute;
+            right: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            font-size: 12px;
+            color: var(--accent-bright);
+            transition: opacity 0.2s;
+        }
+
+        .editable:hover {
+            border-color: rgba(37, 99, 235, 0.4);
+            background: rgba(37, 99, 235, 0.03);
+        }
+
+        .editable:hover::after {
+            opacity: 0.7;
+        }
+
+        .editable:focus {
+            border-color: var(--accent-bright);
+            background: rgba(37, 99, 235, 0.08);
+            padding-right: 4px;
+        }
+
+        .editable:focus::after {
+            display: none;
+        }
+
+        /* Results / Diagnostics Panel */
+        /* Results / Diagnostics Panel */
+        .diagnostics-panel {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 0;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+
+        .diagnostics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-soft);
+            padding: 12px 16px;
+            background: rgba(21, 21, 23, 0.6);
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .diagnostics-title {
+            font-size: 13.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+        }
+
+        .diagnostics-title .lucide {
+            width: 16px;
+            height: 16px;
+            color: var(--accent-bright);
+        }
+
+        .diagnostics-title span {
+            color: var(--accent-bright);
+        }
+
+        /* Diagnostic Panel Header Actions */
+        .diag-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .diag-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 5px 10px;
+            font-family: var(--font-body);
+            font-size: 11.5px;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            text-decoration: none;
+            line-height: 1.2;
+        }
+
+        .diag-btn:hover {
+            border-color: var(--border-soft);
+            color: var(--text);
+            background: var(--surface-hover);
+        }
+
+        .diag-btn-primary {
+            background: var(--accent-dim);
+            border-color: rgba(37, 99, 235, 0.35);
+            color: var(--accent-bright);
+        }
+
+        .diag-btn-primary:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #ffffff;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+        }
+
+        .diag-btn.active {
+            background: rgba(37, 99, 235, 0.25);
+            border-color: var(--accent-bright);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.35);
+        }
+
+        .diagnostics-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .diagnostic-card {
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-bottom: 1px solid var(--border-soft);
+            position: relative;
+        }
+
+        .diagnostic-card:last-child {
+            border-bottom: none;
+        }
+
+        @media (max-width: 900px) {
+            .diagnostics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .diagnostic-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .diagnostic-indicator {
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .diagnostic-indicator .lucide {
+            width: 14px;
+            height: 14px;
+        }
+
+        .diagnostic-indicator.success {
+            background: var(--color-success-dim);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--color-success);
+        }
+
+        .diagnostic-indicator.error {
+            background: var(--color-error-dim);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--color-error);
+        }
+
+        .diagnostic-indicator.info {
+            background: var(--accent-dim);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            color: var(--accent-bright);
+        }
+
+        .diagnostic-card-header h4 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-faint);
+            font-weight: 700;
+        }
+
+        .diagnostic-card p {
+            font-size: 13px;
+            color: #d1d5db;
+            line-height: 1.55;
+            margin: 0;
+        }
+
+        /* Settings Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+            overflow: hidden;
+            animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-soft);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-soft);
+            background: rgba(15, 15, 17, 0.4);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: var(--text-faint);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        /* Paywall/Limit Modal */
+        .limit-modal {
+            max-width: 460px;
+            text-align: center;
+        }
+
+        .limit-modal .modal-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 36px 24px;
+        }
+
+        .limit-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--color-warning-dim);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: var(--color-warning);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .limit-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .limit-desc {
+            color: var(--text-muted);
+            font-size: 14.5px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        /* ============================================================
+           RESPONSIVE LAYOUTS — Mobile-First
+        ============================================================ */
+
+        /* Tablet: collapse two-column to single stacked column */
+        @media (max-width: 1100px) {
+
+            .workspace,
+            .workspace.results-active,
+            .workspace.results-active.setup-expanded {
+                grid-template-columns: 1fr;
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .setup-panel-content {
+                width: 100%;
+            }
+
+            .workspace.results-active .results-view {
+                grid-template-columns: 1fr;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Hide the sidebar toggle strip on tablet — FAB handles it */
+            .setup-toggle-container {
+                display: none !important;
+            }
+
+            /* Setup panel: show/hide via class instead of grid collapse */
+            .workspace.results-active .setup-panel {
+                border-right: none;
+                display: none;
+            }
+
+            .workspace.results-active.setup-expanded .setup-panel {
+                display: block;
+            }
+
+            /* Show mobile FAB when there are results */
+            .workspace.results-active ~ .mobile-fab,
+            .workspace.results-active + * .mobile-fab {
+                display: flex;
+            }
+        }
+
+        /* Mobile: tighter spacing, full-width elements */
+        @media (max-width: 640px) {
+            .workspace {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .nav-inner {
+                padding: 10px 14px;
+            }
+
+            .brand {
+                font-size: 16px;
+            }
+
+            .logo-img {
+                height: 26px;
+            }
+
+            .usage-badge {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+
+            /* Setup panel cards fill screen */
+            .setup-panel-content {
+                width: 100%;
+            }
+
+            .card {
+                padding: 14px;
+            }
+
+            /* Make YT cards stack vertically */
+            .yt-card {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .yt-card-thumbnail {
+                width: 100%;
+            }
+
+            /* Compact YT header */
+            .yt-header {
+                padding: 8px 12px;
+                gap: 8px;
+            }
+
+            .yt-logo {
+                font-size: 15px;
+            }
+
+            /* Feed view toggles — tighten */
+            .feed-view-toggles {
+                padding: 2px;
+            }
+
+            .view-toggle-btn {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+
+            /* Diagnostics header wraps gracefully */
+            .diagnostics-header {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .diag-header-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            /* Score banner: stack vertically */
+            .score-banner {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            /* Reduce diagnostics card padding */
+            .diagnostic-card {
+                padding: 14px 16px;
+            }
+
+            /* Toast: full-width bottom */
+            .toast-container {
+                top: auto;
+                bottom: 80px;
+                left: 12px;
+                right: 12px;
+            }
+
+            .toast {
+                max-width: 100%;
+            }
+
+            /* Results view: full width single column */
+            .workspace.results-active .results-view {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Show FAB on mobile/tablet in results mode */
+        @media (max-width: 1100px) {
+            .mobile-fab {
+                display: none; /* hidden by default, JS shows it when results active */
+            }
+            .mobile-drawer {
+                display: flex;
+                flex-direction: column;
+            }
+            .mobile-drawer-backdrop {
+                display: block;
+            }
+        }
+
+        /* Toast Notifications (Positioned in Bottom-Left Corner) */
+        .toast-container { position: fixed; bottom: 24px; left: 24px; top: auto; right: auto; z-index: 9999; display: flex; flex-direction: column-reverse; gap: 10px; pointer-events: none; }
+        .toast { 
+            pointer-events: auto; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 14px 20px; 
+            border-radius: 12px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            color: #ffffff; 
+            background: #18181c; 
+            border: 1px solid #2a2a32; 
+            border-left: 5px solid #3b82f6; 
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08); 
+            animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1); 
+            max-width: 420px; 
+            opacity: 1 !important; 
+        }
+        .toast.toast-out { animation: toastOut 0.3s ease forwards; }
+        .toast-icon { width: 20px; height: 20px; flex-shrink: 0; }
+        .toast.toast-error { 
+            background: #241618 !important; 
+            border-color: #5c2025 !important; 
+            border-left: 5px solid #ef4444 !important; 
+            color: #ffffff !important;
+        }
+        .toast.toast-error .toast-icon { color: #ef4444; }
+        .toast.toast-success { 
+            background: #13241b !important; 
+            border-color: #1a4d36 !important; 
+            border-left: 5px solid #10b981 !important; 
+            color: #ffffff !important;
+        }
+        .toast.toast-success .toast-icon { color: #10b981; }
+        .toast.toast-warning { 
+            background: #261f14 !important; 
+            border-color: #523c1c !important; 
+            border-left: 5px solid #f59e0b !important; 
+            color: #ffffff !important;
+        }
+        .toast.toast-warning .toast-icon { color: #f59e0b; }
+        .toast.toast-info { 
+            background: #151e30 !important; 
+            border-color: #213763 !important; 
+            border-left: 5px solid #3b82f6 !important; 
+            color: #ffffff !important;
+        }
+        .toast.toast-info .toast-icon { color: #3b82f6; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(-40px) scale(0.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
+        @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-40px); } }
+
+        /* Tally popup z-index override to sit above everything */
+        .tally-popup { z-index: 400 !important; }
+
+        /* Redacted/Hidden metadata placeholders */
+        .yt-card-metadata-redacted { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+        .redacted-block { height: 10px; border-radius: 3px; background: #222; }
+        .redacted-block.w1 { width: 48px; }
+        .redacted-block.w2 { width: 8px; }
+        .redacted-block.w3 { width: 64px; }
+
+        /* Preset Keyword Chips */
+        .keyword-presets { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .preset-label { font-size: 11px; color: var(--text-faint); font-weight: 500; }
+        .preset-chip { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 100px; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; transition: all 0.15s ease; }
+        .preset-chip:hover { border-color: var(--accent); color: var(--accent-bright); background: var(--accent-dim); }
+
+        /* Feed View Toggles */
+        .feed-view-toggles { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2px; gap: 2px; flex-shrink: 0; }
+        .view-toggle-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600; color: var(--text-muted); background: transparent; border: none; cursor: pointer; transition: all 0.15s ease; }
+        .view-toggle-btn.active { background: var(--bg-elevated); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.3); border: 1px solid var(--border-soft); }
+
+        /* Mobile Feed Viewport Mode — Realistic YouTube Mobile phone mockup */
+        .yt-search-container {
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .yt-search-container.mobile-feed-active {
+            max-width: 390px;
+            margin: 0 auto;
+            border-radius: 20px;
+            border: 1px solid #333;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+            background: #0f0f0f;
+            overflow: hidden;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-header {
+            padding: 10px 14px;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-search-row {
+            padding: 6px 14px 10px;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-results-list {
+            padding: 8px 0;
+            max-height: 620px;
+            gap: 0;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-card {
+            flex-direction: column;
+            gap: 0;
+            border-bottom: 1px solid #222;
+            padding: 0 0 14px 0;
+            border-radius: 0;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-card:hover:not(.is-you) {
+            background: transparent;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-card.is-you {
+            border: none;
+            background: rgba(37, 99, 235, 0.05);
+            border-radius: 0;
+            margin: 0;
+            padding: 0 0 14px 0;
+            overflow: visible;
+            position: relative;
+            /* Accent left-side stripe to mark YOUR card */
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+
+        .yt-search-container.mobile-feed-active .yt-card-thumbnail {
+            width: 100%;
+            min-width: unset;
+            aspect-ratio: 16/9;
+            border-radius: 0;
+        }
+
+        /* No extra border-radius on the user thumb — keep it flush in mobile */
+        .yt-search-container.mobile-feed-active .yt-card.is-you .yt-card-thumbnail {
+            border-radius: 0;
+            overflow: hidden;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-card-content {
+            padding: 12px 14px 0 14px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-mobile-avatar-col {
+            display: block;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-mobile-avatar-col .yt-channel-avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 14px;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-card-title {
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.35;
+        }
+
+        .yt-search-container.mobile-feed-active .yt-card-description {
+            display: none;
+        }
+
+        .yt-search-container.mobile-feed-active .you-corner {
+            display: none;
+        }
+
+        /* Diagnostic Tag Chips */
+        .diagnostic-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 14px 20px 4px 20px; }
+        .diag-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 100px; font-size: 11.5px; font-weight: 600; border: 1px solid transparent; }
+        .diag-chip.green { background: var(--color-success-dim); color: var(--color-success); border-color: rgba(16, 185, 129, 0.3); }
+        .diag-chip.yellow { background: var(--color-warning-dim); color: var(--color-warning); border-color: rgba(245, 158, 11, 0.3); }
+        .diag-chip.red { background: var(--color-error-dim); color: var(--color-error); border-color: rgba(239, 68, 68, 0.3); }
+
+        /* Heatmap Canvas Overlay */
+        .heatmap-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: var(--radius-sm); opacity: 0.72; mix-blend-mode: hard-light; z-index: 5;
+            background:
+                radial-gradient(ellipse at 38% 42%, rgba(255,0,0,0.9) 0%, rgba(255,100,0,0.75) 15%, rgba(255,220,0,0.5) 32%, transparent 55%),
+                radial-gradient(ellipse at 70% 28%, rgba(255,60,0,0.7) 0%, rgba(255,160,0,0.45) 18%, transparent 42%),
+                radial-gradient(ellipse at 20% 70%, rgba(0,200,200,0.3) 0%, transparent 38%);
+        }
+
+        /* Heatmap legend */
+        .heatmap-legend { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: rgba(0,0,0,0.6); border-radius: 6px; font-size: 11px; color: #fff; margin-top: 8px; }
+        .heatmap-legend-bar { height: 8px; width: 80px; border-radius: 4px; background: linear-gradient(to right, #00c8c8, #ffdc00, #ff6400, #ff0000); }
+
+        /* Verified Checkmark */
+        .verified-badge { display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; border-radius: 50%; background: #aaa; color: #000; font-size: 8px; font-weight: 900; margin-left: 3px; flex-shrink: 0; }
+
+        /* Gemini fallback key input */
+        .fallback-key-row { margin-top: 10px; }
+        .fallback-key-label { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; display: block; }
+    </style>
+</head>
+
+<body>
+    <!-- Backend API URL Configuration -->
+    <!-- When deployed on Netlify, set this to your Render/Railway backend URL -->
+    <!-- Example: window.THUMBNAILSPY_API_URL = 'https://thumbnailspy-api.onrender.com'; -->
+    <script>
+        // PRODUCTION: Replace the empty string below with your deployed backend URL
+        // e.g. 'https://thumbnailspy-api.onrender.com'
+        window.THUMBNAILSPY_API_URL = '';
+    </script>
+
+    <!-- NAV -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <a class="brand" href="index.html">
+                <img src="assets/logo.png" alt="ThumbnailSpy Logo" class="logo-img">
+                ThumbnailSpy
+            </a>
+            <div class="nav-controls" style="display:flex; align-items:center; gap:16px;">
+                <div class="usage-badge">
+                    <span class="usage-dot" id="usageDot"></span>
+                    <span id="usageLabel">Free Previews: 0 / 5</span>
+                </div>
+                <div id="userAuthContainer" style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.1); animation:tsSpinner 1s linear infinite;"></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Tally popup is triggered programmatically — no HTML needed here -->
+
+    <!-- MAIN WORKSPACE -->
+    <main class="workspace">
+
+        <!-- Left Setup Panel -->
+        <section class="setup-panel" id="setupPanel">
+            <!-- Expanded State -->
+            <div class="setup-panel-content" id="setupPanelContent">
+                <!-- Upload Thumbnail Card -->
+                <div class="card">
+                    <div class="card-title">
+                        <span>01</span> Upload Thumbnail
+                    </div>
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon-container" id="uploadIconContainer"
+                            style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                            <svg class="upload-icon" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            <div class="upload-text">Drag & drop thumbnail or <span>browse</span></div>
+                            <div class="upload-hint">Supports JPG, PNG (Max 2MB) • 16:9 aspect ratio recommended</div>
+                        </div>
+                        <div class="image-preview-container" id="previewContainer" style="display: none;">
+                            <button type="button" class="remove-img-btn" id="removeImgBtn"
+                                title="Remove image">✕</button>
+                            <img src="" alt="Thumbnail Preview" class="preview-img" id="previewImg">
+                        </div>
+                        <input type="file" class="file-input" id="fileInput" accept="image/png, image/jpeg">
+                    </div>
+                </div>
+
+                <!-- Keyword Card -->
+                <div class="card">
+                    <div class="card-title">
+                        <span>02</span> Search Keyword
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="keywordInput">What keyword are you targeting?</label>
+                        <input type="text" class="input-text" id="keywordInput"
+                            placeholder="e.g. how to make money online" autocomplete="off">
+                        <div class="keyword-presets">
+                            <span class="preset-label">Presets:</span>
+                            <button type="button" class="preset-chip" onclick="fillKeyword('how to make money online')">Money</button>
+                            <button type="button" class="preset-chip" onclick="fillKeyword('how to edit videos faster')">Editing</button>
+                            <button type="button" class="preset-chip" onclick="fillKeyword('productive morning routine')">Routine</button>
+                            <button type="button" class="preset-chip" onclick="fillKeyword('best gaming setup 2026')">Gaming</button>
+                            <button type="button" class="preset-chip" onclick="fillKeyword('python coding tutorial')">Coding</button>
+                        </div>
+                    </div>
+                    <button class="spy-btn" id="spyBtn" style="margin-top: 16px;">
+                        <i data-lucide="radar"></i>
+                        <span>Spy Now</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toggle Button (Visible only on desktop when results active) -->
+            <div class="setup-toggle-container">
+                <button class="setup-toggle-btn" id="setupToggleBtn" title="Toggle Setup Panel">
+                    <i data-lucide="menu"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Right Workspace Viewer -->
+        <section class="viewer-panel">
+
+            <!-- EMPTY STATE -->
+            <div class="state-container empty-state active" id="emptyState">
+                <div class="empty-graphic">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        <line x1="11" y1="8" x2="11" y2="14" />
+                        <line x1="8" y1="11" x2="14" y2="11" />
+                    </svg>
+                </div>
+                <h3 class="empty-title">Feed Preview Simulator</h3>
+                <p class="empty-desc">Upload your draft thumbnail design on the left, enter the keyword search phrase
+                    you are targeting, and click "Spy Now" to build your competitor feed.</p>
+            </div>
+
+            <!-- LOADING STATE -->
+            <div class="state-container loading-state" id="loadingState">
+                <div class="loader-ring"></div>
+                <h3 class="loading-title">Spying on the Feed...</h3>
+                <div class="loading-steps">
+                    <div class="loading-step" id="loadingStep1">
+                        <div class="step-icon" id="stepIcon1">
+                            <div class="step-icon-spinner"></div>
+                        </div>
+                        <span>Scanning YouTube search results...</span>
+                    </div>
+                    <div class="loading-step" id="loadingStep2">
+                        <div class="step-icon" id="stepIcon2"><span>○</span></div>
+                        <span>Constructing competitor matchup feed...</span>
+                    </div>
+                    <div class="loading-step" id="loadingStep3">
+                        <div class="step-icon" id="stepIcon3"><span>○</span></div>
+                        <span>Generating Gemini AI critique reports...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESULTS WORKSPACE VIEW -->
+            <div class="results-view" id="resultsView">
+
+                <!-- YouTube Simulator Feed -->
+                <div class="yt-search-container" id="ytSearchContainer">
+
+                    <!-- Feed Header Row 1: Brand + Demo badge + view toggles -->
+                    <div class="yt-header">
+                        <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                            <div class="yt-logo">
+                                <span class="yt-logo-box">YT</span>
+                                Feed Simulator
+                            </div>
+                            <div class="demo-mode-badge" id="demoModeBadge" style="display: none;">
+                                <i data-lucide="sparkles"></i> Demo Mode
+                            </div>
+                        </div>
+
+                        <!-- View Mode Toggles -->
+                        <div class="feed-view-toggles">
+                            <button type="button" class="view-toggle-btn active" id="viewBtnDesktop" onclick="switchFeedView('desktop')">
+                                <i data-lucide="monitor" style="width: 13px; height: 13px;"></i> Desktop
+                            </button>
+                            <button type="button" class="view-toggle-btn" id="viewBtnMobile" onclick="switchFeedView('mobile')">
+                                <i data-lucide="smartphone" style="width: 13px; height: 13px;"></i> Mobile
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Feed Header Row 2: Search bar -->
+                    <div class="yt-search-row">
+                        <div class="yt-search-bar">
+                            <input type="text" class="yt-search-input" id="ytSearchInput" readonly placeholder="Enter a keyword on the left to spy...">
+                            <button class="yt-search-btn" disabled>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Feed List -->
+                    <div class="yt-results-list" id="ytResultsList">
+                        <!-- Dynamic items injected here. Position 1 is always User. -->
+                    </div>
+                </div>
+
+                <!-- AI Analysis / diagnostics panel -->
+                <div class="diagnostics-panel" id="diagnosticsPanel">
+                    <div class="diagnostics-header">
+                        <h3 class="diagnostics-title">
+                            <i data-lucide="brain"></i> <span>Gemini</span> Analysis
+                        </h3>
+                        <div class="diag-header-actions">
+                            <button type="button" class="diag-btn" id="heatmapToggleBtn" onclick="toggleAttentionHeatmap()" title="Toggle Visual Attention Heatmap">
+                                <i data-lucide="eye" style="width: 13px; height: 13px;"></i> <span id="heatmapBtnText">Heatmap</span>
+                            </button>
+                            <button type="button" class="diag-btn diag-btn-primary" id="iterateBtn" title="Upload a new thumbnail draft">
+                                <i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i> <span>Upload New</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Prominent CTR Potential AI Score Banner -->
+                    <div class="score-banner" id="scoreBanner">
+                        <div class="score-main">
+                            <div class="score-circle-container">
+                                <svg class="score-svg" viewBox="0 0 100 100">
+                                    <circle class="score-bg-circle" cx="50" cy="50" r="42"></circle>
+                                    <circle class="score-progress-circle" id="scoreProgressCircle" cx="50" cy="50" r="42"></circle>
+                                </svg>
+                                <div class="score-number-display">
+                                    <span id="scoreValue">--</span>
+                                    <span class="score-denom">/10</span>
+                                </div>
+                            </div>
+                            <div class="score-details">
+                                <div class="score-badge" id="scoreBadge">Analyzing CTR...</div>
+                                <h4 class="score-title">Overall CTR Potential Score</h4>
+                                <p class="score-subtitle">Benchmarked against ranking competitors in search feed</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Categorized Diagnostic Tag Chips -->
+                    <div class="diagnostic-chips" id="diagnosticChips">
+                        <span class="diag-chip green"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Contrast: High (8.8/10)</span>
+                        <span class="diag-chip green"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Mobile Readability: Clear</span>
+                        <span class="diag-chip yellow"><i data-lucide="alert-triangle" style="width: 12px; height: 12px;"></i> Emotional Hook: Medium</span>
+                        <span class="diag-chip green"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Duration Badge: Safe Zone</span>
+                    </div>
+
+                    <div class="diagnostics-grid">
+                        <div class="diagnostic-card">
+                            <div class="diagnostic-card-header">
+                                <div class="diagnostic-indicator success"><i data-lucide="check"></i></div>
+                                <h4>What's Working</h4>
+                            </div>
+                            <p id="workingFeedback">Analyzing...</p>
+                        </div>
+                        <div class="diagnostic-card">
+                            <div class="diagnostic-card-header">
+                                <div class="diagnostic-indicator error"><i data-lucide="x"></i></div>
+                                <h4>What's Hurting You</h4>
+                            </div>
+                            <p id="hurtingFeedback">Analyzing...</p>
+                        </div>
+                        <div class="diagnostic-card">
+                            <div class="diagnostic-card-header">
+                                <div class="diagnostic-indicator info"><i data-lucide="crosshair"></i></div>
+                                <h4>One Specific Fix</h4>
+                            </div>
+                            <p id="fixFeedback">Analyzing...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- USAGE LIMIT MODAL -->
+    <div class="modal-overlay" id="limitModal">
+        <div class="modal limit-modal" style="max-width: 440px;">
+            <div class="modal-body" style="padding:32px 24px;">
+                <div class="limit-icon" style="background: rgba(37,99,235,0.1); color: var(--accent-bright);"><i data-lucide="zap"></i></div>
+                <h3 class="limit-title" style="margin-bottom: 8px;">Free Quota Reached</h3>
+                <p class="limit-desc" style="font-size: 14px; line-height: 1.55; margin-bottom: 22px; color: var(--text-muted);">
+                    You have used up your 7 free monthly previews. Upgrade your plan to get unlimited competitor search feed previews and Gemini AI analysis.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                    <button class="btn btn-primary" style="width:100%; padding:13px; font-weight:700;" onclick="document.getElementById('limitModal').classList.remove('active'); showCheckoutModal('$30 Lifetime Pass', '$30', 'One-time payment for lifetime unlimited feed previews.');">
+                        🔥 Get Lifetime Pass ($30 One-Time)
+                    </button>
+                    <button class="btn btn-ghost" style="width:100%; padding:11px; border: 1px solid var(--border); color: var(--text);" onclick="document.getElementById('limitModal').classList.remove('active'); showCheckoutModal('Pro Monthly Plan', '$19/mo', 'Unlimited previews billed monthly.');">
+                        Upgrade to Pro ($19/month)
+                    </button>
+                    <button type="button" style="background:none; border:none; color:var(--text-faint); font-size:13px; cursor:pointer; margin-top:4px;" onclick="document.getElementById('limitModal').classList.remove('active');">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth-modal.js"></script>
+
+    <script>
+        // DOM elements
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadIconContainer = document.getElementById('uploadIconContainer');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImg = document.getElementById('previewImg');
+        const removeImgBtn = document.getElementById('removeImgBtn');
+        const keywordInput = document.getElementById('keywordInput');
+        const spyBtn = document.getElementById('spyBtn');
+        const iterateBtn = document.getElementById('iterateBtn');
+        const workspace = document.querySelector('.workspace');
+        const setupToggleBtn = document.getElementById('setupToggleBtn');
+
+        // States
+        const emptyState = document.getElementById('emptyState');
+        const loadingState = document.getElementById('loadingState');
+        const resultsView = document.getElementById('resultsView');
+
+        // Loading steps
+        const step1 = document.getElementById('loadingStep1');
+        const step2 = document.getElementById('loadingStep2');
+        const step3 = document.getElementById('loadingStep3');
+
+        // Search Simulator DOM
+        const ytSearchInput = document.getElementById('ytSearchInput');
+        const ytResultsList = document.getElementById('ytResultsList');
+
+        // Diagnostics DOM
+        const workingFeedback = document.getElementById('workingFeedback');
+        const hurtingFeedback = document.getElementById('hurtingFeedback');
+        const fixFeedback = document.getElementById('fixFeedback');
+
+        // Usage DOM
+        const usageDot = document.getElementById('usageDot');
+        const usageLabel = document.getElementById('usageLabel');
+        const limitModal = document.getElementById('limitModal');
+
+        // Toast container
+        const toastContainer = document.getElementById('toastContainer');
+
+        // App state variables
+        let uploadedFile = null;
+        let uploadedImageBase64 = null;
+        let currentUser = null;
+        let currentUserProfile = null;
+
+        // --- Toast Notification System ---
+        function showToast(message, type = 'info', duration = 4000) {
+            const iconMap = {
+                error: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+                success: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+                warning: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+                info: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+            };
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `${iconMap[type] || iconMap.info}<span>${message}</span>`;
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('toast-out');
+                toast.addEventListener('animationend', () => toast.remove());
+            }, duration);
+        }
+
+        // Real-looking Mock Search Results Database
+        const MOCK_DATABASES = {
+            "how to make money online": [
+                { title: "7 Realistic Ways to Make Money Online in 2026", channel: "Ali Abdaal", avatarText: "AA" },
+                { title: "How I Made $10,000 In 30 Days (For Beginners)", channel: "Graham Stephan", avatarText: "GS" },
+                { title: "I Tried Passive Income Apps For 24 Hours", channel: "Thomas Frank", avatarText: "TF" },
+                { title: "10 Digital Products You Can Sell (Step-by-Step)", channel: "Aisha Griggs", avatarText: "AG" },
+                { title: "How to Make Money Online with ZERO Budget", channel: "Wholesale Ted", avatarText: "WT" },
+                { title: "The Truth About Making Money Online (Not A Scam)", channel: "Sunny Lenarduzzi", avatarText: "SL" },
+                { title: "Copy & Paste Affiliate Marketing Method ($300/Day)", channel: "Franklin Hatchett", avatarText: "FH" },
+                { title: "My Passive Income Strategy: $24,000/Month Explained", channel: "Gillian Perkins", avatarText: "GP" },
+                { title: "I Started a Dropshipping Store in 48 Hours", channel: "Biaheza", avatarText: "BZ" }
+            ],
+            "how to edit videos faster": [
+                { title: "How to Edit Videos 10x Faster in Premiere Pro", channel: "Justin Odisho", avatarText: "JO" },
+                { title: "5 Workflow Hacks for Speedy Video Editing", channel: "Cinecom.net", avatarText: "CC" },
+                { title: "Edit Faster: My Complete Premiere Pro Hotkeys Layout", channel: "Peter McKinnon", avatarText: "PM" },
+                { title: "The secret to editing videos in under 1 hour", channel: "Hillier Video", avatarText: "HV" },
+                { title: "DaVinci Resolve Quick Edit Workflow Tutorial", channel: "Casey Faris", avatarText: "CF" },
+                { title: "How I edit my videos in 4 hours (Vlog Walkthrough)", channel: "Sara Dietschy", avatarText: "SD" },
+                { title: "Premiere Pro Hacks They Don't Want You to Know", channel: "Kyler Holland", avatarText: "KH" },
+                { title: "Ultimate Shortcuts Cheat Sheet for Beginners", channel: "Jared Vandermeer", avatarText: "JV" },
+                { title: "Stop Wasting Time: Organize Your Assets First", channel: "Edit House", avatarText: "EH" }
+            ],
+            "productive morning routine": [
+                { title: "My 5:30 AM Productive Morning Routine (Minimalist)", channel: "Matt D'Avella", avatarText: "MD" },
+                { title: "How to Build a Morning Routine You Actually Keep", channel: "Thomas Frank", avatarText: "TF" },
+                { title: "5 habits that completely transformed my mornings", channel: "Rowena Tsai", avatarText: "RT" },
+                { title: "The Ultimate 6-Step Millionaire Morning Routine", channel: "Robin Sharma", avatarText: "RS" },
+                { title: "My Realistic Productive Routine (Working 9 to 5)", channel: "Jem", avatarText: "JM" },
+                { title: "A Neuroscientist's Perfect Morning Routine", channel: "Dr. Andrew Huberman", avatarText: "AH" },
+                { title: "Slowing Down: My Cozy Productive Morning Vibe", channel: "Nami's Life", avatarText: "NL" },
+                { title: "Stop Checking Your Phone First Thing In The Morning", channel: "Simon Sinek", avatarText: "SS" },
+                { title: "10 Morning Habits for Success & High Energy", channel: "Muchelleb", avatarText: "MB" }
+            ]
+        };
+
+        // Realistic Mock Gemini Diagnostics Database
+        const MOCK_CRITIQUES = {
+            "how to make money online": {
+                score: 7.8,
+                working: "Your bold typography and high-contrast styling stand out well. The bright gradient tone creates an optimistic feel that matches financial search intent better than competitors with darker, calmer backgrounds.",
+                hurting: "Your background element is overly cluttered compared to top-ranking competitors like Wholesale Ted. Furthermore, your bottom-right text gets blocked by the YouTube duration badge, causing key info to blend in.",
+                fix: "Shift primary text to the left 60%, blur background graphics by 12px, and swap text accents to electric yellow to dramatically outshine competing thumbnails."
+            },
+            "how to edit videos faster": {
+                score: 6.4,
+                working: "Clear software logos instantly anchor context for video editors. The split-screen framing visually signals a before/after transformation faster than text alone.",
+                hurting: "Overall contrast between your text overlay and background screenshots is lower than top competitors like Peter McKinnon. On smaller mobile displays, text blends into timeline clutter.",
+                fix: "Add a 45% black drop shadow or a dark gradient vignette behind your headline text to enforce crisp separation against competitor thumbnails."
+            },
+            "productive morning routine": {
+                score: 8.2,
+                working: "Warm, cozy lighting captures the lifestyle aesthetic of top creators like Matt D'Avella. The uncluttered layout avoids overwhelming viewers scanning the feed.",
+                hurting: "Your title text 'My Routine' is smaller and carries less emotional hook than top-ranking competitors like Thomas Frank. Your face crop is also positioned too far back.",
+                fix: "Zoom 30% closer on facial expression to heighten emotional connection, and double main title font size so it pops next to Matt D'Avella's minimalist layout."
+            },
+            "generic": {
+                score: 7.2,
+                working: "Strong subject positioning creates a clean visual hierarchy, reserving ample negative space for crisp headline typography.",
+                hurting: "Your color palette mirrors competitors too closely, causing your thumbnail to blend into the search grid rather than capturing immediate scroll-stopping focus.",
+                fix: "Add an ultra-vibrant contrast border or swap main callout text to electric cyan to immediately pop against competing search results."
+            }
+        };
+
+        // --- SVG Mock Thumbnail Generator ---
+        function generateMockThumbnailSvg(title, channel, index) {
+            const themes = [
+                { bg1: '#1e1b4b', bg2: '#312e81', accent: '#fbbf24', text: '#ffffff', tag: 'GUIDE' },
+                { bg1: '#0f172a', bg2: '#1e293b', accent: '#38bdf8', text: '#ffffff', tag: '2026' },
+                { bg1: '#14532d', bg2: '#052e16', accent: '#4ade80', text: '#ffffff', tag: 'SECRET' },
+                { bg1: '#7c2d12', bg2: '#451a03', accent: '#f97316', text: '#ffffff', tag: 'PRO' },
+                { bg1: '#581c87', bg2: '#3b0764', accent: '#c084fc', text: '#ffffff', tag: 'TIPS' },
+                { bg1: '#831843', bg2: '#500724', accent: '#f472b6', text: '#ffffff', tag: '10X' },
+                { bg1: '#172554', bg2: '#1e3a8a', accent: '#60a5fa', text: '#ffffff', tag: 'FREE' }
+            ];
+
+            const theme = themes[(index || 0) % themes.length];
+            const cleanTitle = (title || '').replace(/[^a-zA-Z0-9\s$]/g, '').trim();
+            const words = cleanTitle.split(/\s+/);
+            let bigText1 = words.slice(0, 2).join(' ').toUpperCase() || 'YOUTUBE';
+            let bigText2 = words.slice(2, 4).join(' ').toUpperCase() || 'TUTORIAL';
+            if (bigText1.length > 14) bigText1 = bigText1.substring(0, 14);
+            if (bigText2.length > 14) bigText2 = bigText2.substring(0, 14);
+
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" width="480" height="270">
+                <defs>
+                    <linearGradient id="bgGrad${index}" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="${theme.bg1}"/>
+                        <stop offset="100%" stop-color="${theme.bg2}"/>
+                    </linearGradient>
+                    <filter id="glow${index}" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="6" result="blur"/>
+                        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                    </filter>
+                </defs>
+                <rect width="480" height="270" fill="url(#bgGrad${index})"/>
+                <path d="M0,45 H480 M0,90 H480 M0,135 H480 M0,180 H480 M0,225 H480 M80,0 V270 M160,0 V270 M240,0 V270 M320,0 V270 M400,0 V270" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                <circle cx="400" cy="60" r="140" fill="${theme.accent}" opacity="0.15" filter="url(#glow${index})"/>
+                <rect x="28" y="24" width="70" height="24" rx="4" fill="${theme.accent}"/>
+                <text x="63" y="40" font-family="Space Grotesk, sans-serif" font-weight="800" font-size="12" fill="#000000" text-anchor="middle">${theme.tag}</text>
+                <text x="28" y="115" font-family="Space Grotesk, Impact, sans-serif" font-weight="900" font-size="32" fill="${theme.text}" letter-spacing="1">${escapeXml(bigText1)}</text>
+                <text x="28" y="155" font-family="Space Grotesk, Impact, sans-serif" font-weight="900" font-size="32" fill="${theme.accent}" letter-spacing="1" filter="url(#glow${index})">${escapeXml(bigText2)}</text>
+                <circle cx="410" cy="190" r="30" fill="rgba(0,0,0,0.4)" stroke="${theme.accent}" stroke-width="2"/>
+                <polygon points="404,179 422,190 404,201" fill="${theme.accent}"/>
+                <rect x="0" y="264" width="480" height="6" fill="${theme.accent}"/>
+            </svg>`;
+
+            return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        }
+
+        function escapeXml(str) {
+            return (str || '').replace(/[<>&'"]/g, (c) => {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        }
+
+        // Init App with Firebase Auth Listener
+        window.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            lucide.createIcons();
+            
+            // Subscribe to Firebase Auth
+            onAuthStateChanged(async (user, profile) => {
+                currentUser = user;
+                currentUserProfile = profile;
+                updateAuthUI(user, profile);
+                updateUsageDisplay(profile);
+
+                // Handle return from Dodo Payments checkout (app.html?payment=success)
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('payment') === 'success' && user && db) {
+                    const planParam = urlParams.get('plan') || 'lifetime';
+                    const updates = {
+                        plan: planParam,
+                        maxLimit: 999999,
+                        purchasedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    if (planParam === 'pro') {
+                        const expires = new Date();
+                        expires.setDate(expires.getDate() + 30);
+                        updates.subscriptionExpiresAt = firebase.firestore.Timestamp.fromDate(expires);
+                    } else {
+                        updates.subscriptionExpiresAt = null;
+                    }
+
+                    await db.collection('users').doc(user.uid).update(updates);
+                    currentUserProfile = await getUserProfile(user.uid);
+                    updateAuthUI(user, currentUserProfile);
+                    updateUsageDisplay(currentUserProfile);
+                    showToast(`🎉 Payment Successful! ${planParam === 'pro' ? 'Pro ($19/mo)' : 'Founder Lifetime ($30)'} plan activated!`, 'success');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            });
+        });
+
+        // Auth UI is managed globally via js/auth-modal.js
+
+        function updateUsageDisplay(profile) {
+            const count = profile ? (profile.usageCount || 0) : 0;
+            const maxLimit = profile ? (profile.maxLimit || 7) : 7;
+            const plan = profile ? (profile.plan || 'free') : 'free';
+
+            if (plan === 'lifetime' || plan === 'pro') {
+                usageLabel.innerText = 'Previews: Unlimited';
+                usageDot.style.background = 'var(--color-success)';
+                usageDot.classList.remove('limit-warning');
+            } else {
+                usageLabel.innerText = `Free Previews: ${count} / ${maxLimit}`;
+                if (count >= maxLimit) {
+                    usageDot.style.background = 'var(--color-error)';
+                    usageDot.classList.add('limit-warning');
+                } else if (count >= maxLimit - 2) {
+                    usageDot.style.background = 'var(--color-warning)';
+                    usageDot.classList.add('limit-warning');
+                } else {
+                    usageDot.style.background = 'var(--accent-bright)';
+                    usageDot.classList.remove('limit-warning');
+                }
+            }
+        }
+
+
+
+        let uploadedFileB = null;
+        let uploadedImageBase64B = null;
+        let isAbMode = false;
+        let isHeatmapActive = false;
+
+        function fillKeyword(kw) {
+            const keywordInput = document.getElementById('keywordInput');
+            if (keywordInput) keywordInput.value = kw;
+            showToast(`Preset selected: "${kw}"`, 'info');
+        }
+
+        function toggleAbMode(enabled) {
+            isAbMode = enabled;
+            const uploadZoneB = document.getElementById('uploadZoneB');
+            if (uploadZoneB) uploadZoneB.style.display = enabled ? 'block' : 'none';
+        }
+
+        function switchFeedView(mode) {
+            const container = document.getElementById('ytSearchContainer');
+            const btnDesktop = document.getElementById('viewBtnDesktop');
+            const btnMobile = document.getElementById('viewBtnMobile');
+
+            if (!container || !btnDesktop || !btnMobile) return;
+
+            if (mode === 'mobile') {
+                container.classList.add('mobile-feed-active');
+                btnMobile.classList.add('active');
+                btnDesktop.classList.remove('active');
+            } else {
+                container.classList.remove('mobile-feed-active');
+                btnDesktop.classList.add('active');
+                btnMobile.classList.remove('active');
+            }
+        }
+
+        function toggleAttentionHeatmap() {
+            isHeatmapActive = !isHeatmapActive;
+            const heatmapBtn = document.getElementById('heatmapToggleBtn');
+            const btnText = document.getElementById('heatmapBtnText');
+            if (btnText) btnText.innerText = isHeatmapActive ? 'Heatmap On' : 'Heatmap';
+            if (heatmapBtn) {
+                if (isHeatmapActive) heatmapBtn.classList.add('active');
+                else heatmapBtn.classList.remove('active');
+            }
+
+            const userThumbnails = document.querySelectorAll('.yt-card.is-you .yt-card-thumbnail');
+            userThumbnails.forEach(box => {
+                let existingOverlay = box.querySelector('.heatmap-overlay');
+                if (isHeatmapActive) {
+                    if (!existingOverlay) {
+                        const overlay = document.createElement('div');
+                        overlay.className = 'heatmap-overlay';
+                        box.appendChild(overlay);
+                    }
+                } else {
+                    if (existingOverlay) existingOverlay.remove();
+                }
+            });
+            showToast(isHeatmapActive ? 'Eye-Tracking Heatmap Overlay Enabled' : 'Heatmap Overlay Disabled', 'info');
+        }
+
+        // --- File Upload Utilities ---
+        function highlightUploadZone(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadZone.classList.add('dragover');
+        }
+
+        function unhighlightUploadZone(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadZone.classList.remove('dragover');
+        }
+
+        function handleFileDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length) {
+                processFile(files[0], 'A');
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length) {
+                processFile(files[0], 'A');
+            }
+        }
+
+        function processFile(file, target = 'A') {
+            // Check file type
+            if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
+                showToast('Invalid file format. Please upload a JPG or PNG image.', 'error');
+                return;
+            }
+
+            // Check file size (2MB limit)
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('File too large. Please upload under 2MB.', 'warning');
+                return;
+            }
+
+            if (target === 'B') {
+                uploadedFileB = file;
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    uploadedImageBase64B = reader.result;
+                    const previewImgB = document.getElementById('previewImgB');
+                    const uploadIconContainerB = document.getElementById('uploadIconContainerB');
+                    const previewContainerB = document.getElementById('previewContainerB');
+                    if (previewImgB) previewImgB.src = reader.result;
+                    if (uploadIconContainerB) uploadIconContainerB.style.display = 'none';
+                    if (previewContainerB) previewContainerB.style.display = 'block';
+                };
+            } else {
+                uploadedFile = file;
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    uploadedImageBase64 = reader.result;
+                    previewImg.src = reader.result;
+                    uploadIconContainer.style.display = 'none';
+                    previewContainer.style.display = 'block';
+                };
+            }
+        }
+
+        function resetUploadState() {
+            uploadedFile = null;
+            uploadedImageBase64 = null;
+            uploadedFileB = null;
+            uploadedImageBase64B = null;
+            previewImg.src = '';
+            uploadIconContainer.style.display = 'flex';
+            previewContainer.style.display = 'none';
+            fileInput.value = '';
+
+            const previewImgB = document.getElementById('previewImgB');
+            const uploadIconContainerB = document.getElementById('uploadIconContainerB');
+            const previewContainerB = document.getElementById('previewContainerB');
+            const fileInputB = document.getElementById('fileInputB');
+
+            if (previewImgB) previewImgB.src = '';
+            if (uploadIconContainerB) uploadIconContainerB.style.display = 'flex';
+            if (previewContainerB) previewContainerB.style.display = 'none';
+            if (fileInputB) fileInputB.value = '';
+        }
+
+        function setupEventListeners() {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, highlightUploadZone, false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, unhighlightUploadZone, false);
+            });
+            uploadZone.addEventListener('drop', handleFileDrop, false);
+            fileInput.addEventListener('change', handleFileSelect, false);
+            removeImgBtn.addEventListener('click', resetUploadState, false);
+
+            spyBtn.addEventListener('click', handleSpyAction);
+            iterateBtn.addEventListener('click', handleIterateAction);
+
+            setupToggleBtn.addEventListener('click', () => {
+                if (workspace.classList.contains('setup-expanded')) {
+                    workspace.classList.remove('setup-expanded');
+                    setupToggleBtn.innerHTML = '<i data-lucide="menu"></i>';
+                } else {
+                    workspace.classList.add('setup-expanded');
+                    setupToggleBtn.innerHTML = '<i data-lucide="x"></i>';
+                }
+                lucide.createIcons();
+            });
+
+            keywordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSpyAction();
+                }
+            });
+
+            limitModal.addEventListener('click', (e) => {
+                if (e.target === limitModal) {
+                    limitModal.classList.remove('active');
+                }
+            });
+        }
+
+        // --- Backend API Proxy Helpers ---
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000' && window.location.port !== ''
+            ? 'http://localhost:3000'
+            : '';
+
+        async function fetchRealYouTubeSearch(keyword) {
+            const response = await fetch(`${API_BASE}/api/youtube/search`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword })
+            });
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || 'YouTube API proxy returned HTTP ' + response.status);
+            }
+            const data = await response.json();
+            if (data.isMockFallback || !data.competitors) {
+                throw new Error(data.error || 'Fallback to mock mode');
+            }
+            return data.competitors;
+        }
+
+        async function fetchRealGeminiAnalysis(keyword, base64DataUrl, competitors) {
+            const response = await fetch(`${API_BASE}/api/gemini/analyze`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword, base64DataUrl, competitors })
+            });
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || 'Gemini API proxy returned HTTP ' + response.status);
+            }
+            const data = await response.json();
+            if (data.isMockFallback || !data.critique) {
+                throw new Error(data.error || 'Fallback to mock mode');
+            }
+            return data.critique;
+        }
+
+        // --- Spy action logic ---
+        async function handleSpyAction() {
+            if (spyBtn.disabled) return;
+
+            // 1. Authentication Gate
+            if (!currentUser) {
+                showToast('Please sign in with Google to use ThumbnailSpy.', 'info');
+                showAuthModal();
+                return;
+            }
+
+            // 2. Validate inputs
+            if (!uploadedFile) {
+                showToast('Please upload a thumbnail image first.', 'warning');
+                return;
+            }
+
+            const keyword = keywordInput.value.trim();
+            if (!keyword) {
+                showToast('Please enter a target keyword.', 'warning');
+                return;
+            }
+
+            // 3. Database Usage Limit Check
+            const usageCount = currentUserProfile?.usageCount || 0;
+            const maxLimit = currentUserProfile?.maxLimit || 5;
+            const plan = currentUserProfile?.plan || 'free';
+
+            if (plan === 'free' && usageCount >= maxLimit) {
+                limitModal.classList.add('active');
+                return;
+            }
+
+            // Disable button during operation
+            spyBtn.disabled = true;
+            const originalBtnContent = spyBtn.innerHTML;
+            spyBtn.innerHTML = '<span class="loader-ring" style="width: 14px; height: 14px; border-width: 2px; margin: 0 auto;"></span>';
+
+            // Switch to Loading View
+            workspace.classList.remove('results-active');
+            workspace.classList.remove('setup-expanded');
+            setupToggleBtn.innerHTML = '<i data-lucide="menu"></i>';
+            lucide.createIcons();
+            emptyState.classList.remove('active');
+            resultsView.classList.remove('active');
+            loadingState.classList.add('active');
+
+            updateLoadingStepper(1, 'active');
+            updateLoadingStepper(2, 'waiting');
+            updateLoadingStepper(3, 'waiting');
+
+            try {
+                // Step 1: Scan YouTube Competitors via Backend Server Proxy
+                await sleep(800);
+                updateLoadingStepper(1, 'completed');
+                updateLoadingStepper(2, 'active');
+
+                let competitors = [];
+                let isMockMode = false;
+
+                try {
+                    competitors = await fetchRealYouTubeSearch(keyword);
+                } catch (err) {
+                    isMockMode = true;
+                    showToast('Backend API fallback triggered. Displaying simulated competitor feed.', 'warning');
+                    competitors = getMockCompetitors(keyword);
+                }
+
+                const demoModeBadge = document.getElementById('demoModeBadge');
+                if (demoModeBadge) {
+                    demoModeBadge.style.display = isMockMode ? 'inline-flex' : 'none';
+                }
+
+                // Step 2: Render YouTube Feed
+                await sleep(600);
+                ytSearchInput.value = keyword;
+                renderFeed(competitors);
+                updateLoadingStepper(2, 'completed');
+                updateLoadingStepper(3, 'active');
+
+                // Step 3: Call Gemini AI Vision Analysis via Backend Proxy
+                await sleep(800);
+                let critique = null;
+
+                try {
+                    critique = await fetchRealGeminiAnalysis(keyword, uploadedImageBase64, competitors);
+                } catch (geminiErr) {
+                    showToast('Gemini Vision fallback triggered. Displaying simulated critique.', 'warning');
+                    critique = getMockCritique(keyword);
+                }
+
+                // Step 4: Render Diagnostics & Increment Usage in Firestore
+                renderCritique(critique);
+                updateLoadingStepper(3, 'completed');
+                await sleep(300);
+
+                if (currentUser) {
+                    currentUserProfile = await incrementUserUsage(currentUser.uid);
+                    updateUsageDisplay(currentUserProfile);
+                }
+
+                loadingState.classList.remove('active');
+                workspace.classList.add('results-active');
+                workspace.classList.remove('setup-expanded');
+                setupToggleBtn.innerHTML = '<i data-lucide="menu"></i>';
+                resultsView.classList.add('active');
+                lucide.createIcons();
+
+            } catch (error) {
+                showToast('Spy Action failed: ' + error.message, 'error');
+                loadingState.classList.remove('active');
+                emptyState.classList.add('active');
+            } finally {
+                spyBtn.disabled = false;
+                spyBtn.innerHTML = originalBtnContent;
+            }
+        }
+
+
+        function handleIterateAction() {
+            // Restore setup layout by expanding
+            workspace.classList.add('setup-expanded');
+            setupToggleBtn.innerHTML = '<i data-lucide="x"></i>';
+            lucide.createIcons();
+
+            // Scroll to top of Left Column
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Reset upload file state but keep the keyword
+            resetUploadState();
+
+            // Give visual hint to upload new version
+            uploadZone.style.boxShadow = '0 0 0 4px var(--accent-ring)';
+            setTimeout(() => {
+                uploadZone.style.boxShadow = 'none';
+            }, 1000);
+        }
+
+        // --- Render Helpers ---
+        function renderFeed(competitors) {
+            ytResultsList.innerHTML = '';
+
+            // 1. Render User video at Position 1
+            const userCard = document.createElement('div');
+            userCard.className = 'yt-card is-you';
+            userCard.innerHTML = `
+                <span class="you-corner tl"></span>
+                <span class="you-corner tr"></span>
+                <span class="you-corner bl"></span>
+                <span class="you-corner br"></span>
+                <div class="yt-card-thumbnail">
+                    <img src="${uploadedImageBase64}" alt="Your Thumbnail">
+                    <span class="you-badge">YOU</span>
+                    ${isHeatmapActive ? '<div class="heatmap-overlay"></div>' : ''}
+                    <span class="yt-card-duration editable" contenteditable="true" spellcheck="false" id="userDurVal" title="Click to edit duration">12:35</span>
+                </div>
+                <div class="yt-card-content">
+                    <div class="yt-mobile-avatar-col">
+                        <div class="yt-channel-avatar" style="background: var(--accent);">Y</div>
+                    </div>
+                    <div class="yt-card-main-col">
+                        <h3 class="yt-card-title editable" contenteditable="true" spellcheck="false" id="userTitleVal" title="Click to edit title">Your Draft Video Title Goes Here (Click to edit)</h3>
+                        <div class="yt-card-channel-row">
+                            <span class="yt-channel-name editable" contenteditable="true" spellcheck="false" id="userChanVal" title="Click to edit channel name">Your Channel</span>
+                            <span class="verified-badge" title="Verified Creator">✓</span>
+                            <span class="yt-meta-dot">•</span>
+                            <span class="editable" contenteditable="true" spellcheck="false" id="userViewsVal" title="Click to edit view count">312K views</span>
+                            <span class="yt-meta-dot">•</span>
+                            <span>Just now</span>
+                        </div>
+                        <p class="yt-card-description">Compare your thumbnail's readability, contrast, and visual framing against competitors ranking for this keyword.</p>
+                    </div>
+                </div>
+            `;
+            ytResultsList.appendChild(userCard);
+
+            // Editable fields: blur on Enter
+            userCard.querySelectorAll('.editable').forEach(el => {
+                el.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+                });
+            });
+
+            // 2. Render Competitors
+            competitors.forEach((comp, idx) => {
+                const compCard = document.createElement('div');
+                compCard.className = 'yt-card';
+                const firstLetter = comp.channel ? comp.channel.charAt(0).toUpperCase() : 'C';
+                const meta = getDeterministicViewsAndDuration(comp.id || comp.title || `comp-${idx}`);
+                compCard.innerHTML = `
+                    <div class="yt-card-thumbnail">
+                        <img src="${comp.thumbnailUrl}" alt="${comp.title}" onerror="this.onerror=null; this.src='${generateMockThumbnailSvg(comp.title, comp.channel, idx + 1)}'">
+                        <span class="yt-card-duration">${meta.duration}</span>
+                    </div>
+                    <div class="yt-card-content">
+                        <div class="yt-mobile-avatar-col">
+                            <div class="yt-channel-avatar" style="background: ${getDeterministicColor(comp.channel)};">${firstLetter}</div>
+                        </div>
+                        <div class="yt-card-main-col">
+                            <h3 class="yt-card-title">${comp.title}</h3>
+                            <div class="yt-card-channel-row">
+                                <span class="yt-channel-name">${comp.channel}</span>
+                                <span class="verified-badge" title="Verified Channel">✓</span>
+                                <span class="yt-meta-dot">•</span>
+                                <span>${meta.views}</span>
+                                <span class="yt-meta-dot">•</span>
+                                <span>${comp.publishedAtText || '2 weeks ago'}</span>
+                            </div>
+                            <p class="yt-card-description">${comp.description || ''}</p>
+                        </div>
+                    </div>
+                `;
+                ytResultsList.appendChild(compCard);
+            });
+        }
+
+        function renderCritique(critique) {
+            const rawScore = critique.score !== undefined ? Number(critique.score) : 7.5;
+            const score = Math.min(10, Math.max(1, Math.round(rawScore * 10) / 10));
+
+            const scoreValueEl = document.getElementById('scoreValue');
+            if (scoreValueEl) scoreValueEl.innerText = score.toFixed(1);
+
+            const circumference = 2 * Math.PI * 42; // ~263.89
+            const offset = circumference - (score / 10) * circumference;
+            const progressCircle = document.getElementById('scoreProgressCircle');
+            const scoreBadge = document.getElementById('scoreBadge');
+
+            if (progressCircle) {
+                progressCircle.style.strokeDasharray = `${circumference}`;
+                progressCircle.style.strokeDashoffset = `${offset}`;
+            }
+
+            if (score >= 8.0) {
+                if (progressCircle) progressCircle.style.stroke = 'var(--color-success)';
+                if (scoreBadge) {
+                    scoreBadge.innerText = 'High CTR Potential';
+                    scoreBadge.style.background = 'var(--color-success-dim)';
+                    scoreBadge.style.color = 'var(--color-success)';
+                    scoreBadge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                }
+            } else if (score >= 6.0) {
+                if (progressCircle) progressCircle.style.stroke = 'var(--color-warning)';
+                if (scoreBadge) {
+                    scoreBadge.innerText = 'Moderate CTR Potential';
+                    scoreBadge.style.background = 'var(--color-warning-dim)';
+                    scoreBadge.style.color = 'var(--color-warning)';
+                    scoreBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                }
+            } else {
+                if (progressCircle) progressCircle.style.stroke = 'var(--color-error)';
+                if (scoreBadge) {
+                    scoreBadge.innerText = 'Needs Improvement';
+                    scoreBadge.style.background = 'var(--color-error-dim)';
+                    scoreBadge.style.color = 'var(--color-error)';
+                    scoreBadge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                }
+            }
+
+            workingFeedback.innerText = critique.working;
+            hurtingFeedback.innerText = critique.hurting;
+            fixFeedback.innerText = critique.fix;
+        }
+
+        function updateLoadingStepper(stepNumber, state) {
+            const stepEl = document.getElementById(`loadingStep${stepNumber}`);
+            const iconEl = document.getElementById(`stepIcon${stepNumber}`);
+
+            if (state === 'active') {
+                stepEl.className = 'loading-step active';
+                iconEl.innerHTML = '<div class="step-icon-spinner"></div>';
+            } else if (state === 'completed') {
+                stepEl.className = 'loading-step completed';
+                iconEl.innerHTML = '<i data-lucide="check" style="width:16px;height:16px;color:var(--color-success)"></i>';
+                lucide.createIcons({ root: iconEl });
+            } else {
+                stepEl.className = 'loading-step';
+                iconEl.innerHTML = '<i data-lucide="circle" style="width:14px;height:14px;color:var(--text-faint)"></i>';
+                lucide.createIcons({ root: iconEl });
+            }
+        }
+
+        // --- Backend API Proxy Calls (No API Keys Client-Side!) ---
+        async function fetchRealYouTubeSearch(keyword) {
+            const response = await fetch('/api/youtube/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword })
+            });
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error || 'Backend YouTube proxy request failed.');
+            }
+
+            const data = await response.json();
+            if (data.isMockFallback || !data.competitors) {
+                throw new Error('API key unavailable or quota exceeded.');
+            }
+            return data.competitors;
+        }
+
+        async function fetchRealGeminiAnalysis(keyword, base64DataUrl, competitors) {
+            const response = await fetch('/api/gemini/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword, base64DataUrl, competitors })
+            });
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error || 'Backend Gemini proxy request failed.');
+            }
+
+            const data = await response.json();
+            if (data.isMockFallback || !data.critique) {
+                throw new Error('Gemini API key unavailable or failed.');
+            }
+            return data.critique;
+        }
+
+        // --- Mock Data Generators (Sandbox / Defaults) ---
+        function getMockCompetitors(keyword) {
+            const normalized = keyword.toLowerCase().trim();
+            let matches = MOCK_DATABASES[normalized];
+
+            if (!matches) {
+                // Generate procedural mock data for custom keywords
+                matches = [];
+                const words = keyword.split(' ');
+                const primaryTerm = words[0] || 'Tutorial';
+                const secondaryTerm = words[1] || 'Guide';
+
+                for (let i = 1; i <= 9; i++) {
+                    const title = getProceduralTitle(i, primaryTerm, secondaryTerm, keyword);
+                    const channel = getProceduralChannel(i);
+                    matches.push({
+                        id: `mock-id-${i}-${Math.random().toString(36).substr(2, 4)}`,
+                        title: title,
+                        channel: channel,
+                        thumbnailUrl: generateMockThumbnailSvg(title, channel, i),
+                        description: `Learn everything about ${keyword}. Tips, tricks, secrets and step-by-step tutorial.`,
+                        publishedAtText: `${i} month${i > 1 ? 's' : ''} ago`
+                    });
+                }
+            } else {
+                // Add procedural thumbnail urls to preset mock data
+                matches = matches.map((m, i) => ({
+                    ...m,
+                    id: `mock-preset-${i}`,
+                    thumbnailUrl: generateMockThumbnailSvg(m.title, m.channel, i + 1),
+                    description: `Step-by-step breakdown on ${keyword}. Discover how to stand out and master the layout.`,
+                    publishedAtText: `${i + 1} week${i > 0 ? 's' : ''} ago`
+                }));
+            }
+            return matches;
+        }
+
+        function getMockCritique(keyword) {
+            const normalized = keyword.toLowerCase().trim();
+            return MOCK_CRITIQUES[normalized] || MOCK_CRITIQUES["generic"];
+        }
+
+        function getProceduralTitle(index, prim, sec, fullKw) {
+            const templates = [
+                `How to Master ${fullKw} (Complete Beginner's Guide)`,
+                `I Tried ${fullKw} for 100 Days — Here's What Happened`,
+                `5 Simple Steps to Win at ${fullKw} in 2026`,
+                `The Hidden Secrets of ${fullKw} they won't tell you`,
+                `Why 99% of creators FAIL at ${fullKw}`,
+                `How I got started with ${fullKw} (Step-by-Step)`,
+                `Avoid THESE 3 Mistakes with ${fullKw}`,
+                `The ultimate tool for ${fullKw} (Workflow Tutorial)`,
+                `${fullKw}: From Scratch to Pro in 15 Minutes`
+            ];
+            return templates[index - 1] || templates[0];
+        }
+
+        function getProceduralChannel(index) {
+            const names = [
+                "TechPro Academy",
+                "CreateLab",
+                "IncomeEngine",
+                "DesignHQ",
+                "Nate Edit Studio",
+                "GrowthFactor",
+                "The Daily Creative",
+                "PixelVibe",
+                "SkillSpark"
+            ];
+            return names[index - 1] || "Creator Studio";
+        }
+
+        // --- Utility Helpers ---
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function decodeHtml(html) {
+            var txt = document.createElement("textarea");
+            txt.innerHTML = html;
+            return txt.value;
+        }
+
+        function getRelativeTime(publishDateStr) {
+            const publishDate = new Date(publishDateStr);
+            const now = new Date();
+            const diffMs = now - publishDate;
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffMonths = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30));
+            const diffYears = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 365));
+
+            if (diffYears > 0) return `${diffYears} year${diffYears > 1 ? 's' : ''} ago`;
+            if (diffMonths > 0) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
+            if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            return `${diffMins > 0 ? diffMins : 1} minute${diffMins > 1 ? 's' : ''} ago`;
+        }
+
+        function getDeterministicViewsAndDuration(videoId) {
+            let hash = 0;
+            for (let i = 0; i < videoId.length; i++) {
+                hash = videoId.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            hash = Math.abs(hash);
+
+            // Generate duration (between 2 and 22 minutes)
+            const totalSeconds = (hash % 1200) + 120; // 120s to 1320s
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            const duration = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+            // Generate view count
+            const viewsRaw = (hash % 6800000) + 1200; // 1.2k to 6.8M
+            let viewsStr = "";
+            if (viewsRaw >= 1000000) {
+                viewsStr = `${(viewsRaw / 1000000).toFixed(1)}M views`;
+            } else if (viewsRaw >= 1000) {
+                viewsStr = `${Math.floor(viewsRaw / 1000)}K views`;
+            } else {
+                viewsStr = `${viewsRaw} views`;
+            }
+
+            return { duration, views: viewsStr };
+        }
+
+        function getDeterministicColor(str) {
+            if (!str) return 'var(--accent)';
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const colors = [
+                '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
+                '#8b5cf6', '#ec4899', '#06b6d4', '#14b8a6'
+            ];
+            return colors[Math.abs(hash) % colors.length];
+        }
+    </script>
+</body>
+
+</html>
