@@ -238,11 +238,16 @@
                     })
                 });
 
-                const data = await response.json();
-
-                if (!response.ok || data.error) {
-                    throw new Error(data.error || 'Server returned HTTP ' + response.status);
+                if (!response.ok) {
+                    let errMsg = `Backend server returned HTTP ${response.status}. Please make sure your backend server is running and reachable.`;
+                    try {
+                        const errJson = await response.json();
+                        if (errJson.error) errMsg = errJson.error;
+                    } catch (_) {}
+                    throw new Error(errMsg);
                 }
+
+                const data = await response.json();
 
                 if (data.isSimulated || data.url?.includes('simulated=true')) {
                     if (db) {
@@ -450,12 +455,18 @@
                 })
             });
 
+            if (!response.ok) {
+                hideLoadingOverlay();
+                let errMsg = `Backend server returned HTTP ${response.status}.`;
+                try {
+                    const errJson = await response.json();
+                    if (errJson.error) errMsg = errJson.error;
+                } catch (_) {}
+                throw new Error(errMsg);
+            }
+
             const data = await response.json();
             hideLoadingOverlay();
-
-            if (!response.ok || data.error) {
-                throw new Error(data.error || 'Server error');
-            }
 
             if (user && typeof db !== 'undefined' && db) {
                 await db.collection('users').doc(user.uid).update({
