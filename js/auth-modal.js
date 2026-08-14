@@ -221,7 +221,8 @@
             try {
                 // API_BASE is set in app.html / index.html as window.THUMBNAILSPY_API_URL
                 // For local dev it falls back to localhost:3000
-                const API_BASE = window.THUMBNAILSPY_API_URL
+                const rawApiUrl = (window.THUMBNAILSPY_API_URL || '').replace(/\/+$/, '');
+                const API_BASE = rawApiUrl
                     || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                         ? `http://localhost:${window.location.port || 3000}`
                         : '');
@@ -434,7 +435,8 @@
 
         try {
             showLoadingOverlay('Processing cancellation request...');
-            const API_BASE = window.THUMBNAILSPY_API_URL
+            const rawApiUrl = (window.THUMBNAILSPY_API_URL || '').replace(/\/+$/, '');
+            const API_BASE = rawApiUrl
                 || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                     ? `http://localhost:${window.location.port || 3000}`
                     : '');
