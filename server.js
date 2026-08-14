@@ -219,7 +219,7 @@ app.post('/api/checkout/create-session', async (req, res) => {
         }
 
         // Call Dodo Payments API
-        const isLive = apiKey.startsWith('dodo_sk_live_') || apiKey.includes('live_');
+        const isLive = process.env.DODO_PAYMENTS_MODE === 'live' || apiKey.startsWith('dodo_sk_live_') || apiKey.includes('live_');
         const primaryUrl = isLive
             ? 'https://live.dodopayments.com/checkouts'
             : 'https://test.dodopayments.com/checkouts';
