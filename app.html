@@ -2993,9 +2993,16 @@
         }
 
         // --- Backend API Proxy Helpers ---
-        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000' && window.location.port !== ''
-            ? 'http://localhost:3000'
-            : '';
+        function getApiBase() {
+            if (window.THUMBNAILSPY_API_URL && window.THUMBNAILSPY_API_URL.trim() !== '') {
+                return window.THUMBNAILSPY_API_URL.replace(/\/+$/, '');
+            }
+            if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000') {
+                return 'http://localhost:3000';
+            }
+            return '';
+        }
+        const API_BASE = getApiBase();
 
         async function fetchRealYouTubeSearch(keyword) {
             const response = await fetch(`${API_BASE}/api/youtube/search`, {
@@ -3313,44 +3320,7 @@
             }
         }
 
-        // --- Backend API Proxy Calls (No API Keys Client-Side!) ---
-        async function fetchRealYouTubeSearch(keyword) {
-            const response = await fetch('/api/youtube/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keyword })
-            });
 
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.error || 'Backend YouTube proxy request failed.');
-            }
-
-            const data = await response.json();
-            if (data.isMockFallback || !data.competitors) {
-                throw new Error('API key unavailable or quota exceeded.');
-            }
-            return data.competitors;
-        }
-
-        async function fetchRealGeminiAnalysis(keyword, base64DataUrl, competitors) {
-            const response = await fetch('/api/gemini/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keyword, base64DataUrl, competitors })
-            });
-
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.error || 'Backend Gemini proxy request failed.');
-            }
-
-            const data = await response.json();
-            if (data.isMockFallback || !data.critique) {
-                throw new Error('Gemini API key unavailable or failed.');
-            }
-            return data.critique;
-        }
 
         // --- Mock Data Generators (Sandbox / Defaults) ---
         function getMockCompetitors(keyword) {

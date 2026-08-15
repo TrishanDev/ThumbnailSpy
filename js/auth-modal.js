@@ -221,11 +221,16 @@
             try {
                 // API_BASE is set in app.html / index.html as window.THUMBNAILSPY_API_URL
                 // For local dev it falls back to localhost:3000
-                const rawApiUrl = (window.THUMBNAILSPY_API_URL || '').replace(/\/+$/, '');
-                const API_BASE = rawApiUrl
-                    || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                        ? `http://localhost:${window.location.port || 3000}`
-                        : '');
+                function getApiBase() {
+                    if (window.THUMBNAILSPY_API_URL && window.THUMBNAILSPY_API_URL.trim() !== '') {
+                        return window.THUMBNAILSPY_API_URL.replace(/\/+$/, '');
+                    }
+                    if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000') {
+                        return 'http://localhost:3000';
+                    }
+                    return '';
+                }
+                const API_BASE = getApiBase();
 
                 const response = await fetch(`${API_BASE}/api/checkout/create-session`, {
                     method: 'POST',
@@ -440,11 +445,16 @@
 
         try {
             showLoadingOverlay('Processing cancellation request...');
-            const rawApiUrl = (window.THUMBNAILSPY_API_URL || '').replace(/\/+$/, '');
-            const API_BASE = rawApiUrl
-                || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                    ? `http://localhost:${window.location.port || 3000}`
-                    : '');
+            function getApiBase() {
+                if (window.THUMBNAILSPY_API_URL && window.THUMBNAILSPY_API_URL.trim() !== '') {
+                    return window.THUMBNAILSPY_API_URL.replace(/\/+$/, '');
+                }
+                if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000') {
+                    return 'http://localhost:3000';
+                }
+                return '';
+            }
+            const API_BASE = getApiBase();
 
             const response = await fetch(`${API_BASE}/api/subscription/cancel`, {
                 method: 'POST',
