@@ -210,8 +210,10 @@ app.post('/api/checkout/create-session', async (req, res) => {
             ? `${returnUrl}&payment=success&plan=${targetPlan}`
             : `${returnUrl}?payment=success&plan=${targetPlan}`;
 
-        if (!isProdOrTestKey) {
-            console.log(`[Dodo Payments Dev Simulation] Session created for user ${userId} (${targetPlan} plan).`);
+        const isSimulationMode = process.env.DODO_PAYMENTS_MODE === 'simulation' || !isProdOrTestKey;
+
+        if (isSimulationMode) {
+            console.log(`[Dodo Payments Dev Simulation] 1-click test session created for user ${userId} (${targetPlan} plan).`);
             return res.json({
                 url: `${finalSuccessUrl}&simulated=true`,
                 isSimulated: true

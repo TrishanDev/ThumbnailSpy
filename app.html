@@ -2733,30 +2733,45 @@
                 updateAuthUI(user, profile);
                 updateUsageDisplay(profile);
 
-                // Handle return from Dodo Payments checkout (app.html?payment=success)
+                // Handle return from Dodo Payments checkout
                 const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('payment') === 'success' && user && db) {
-                    const planParam = urlParams.get('plan') || 'lifetime';
-                    const updates = {
-                        plan: planParam,
-                        maxLimit: 999999,
-                        purchasedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
+                if (urlParams.has('payment') && user) {
+                    const isSimulated = urlParams.get('simulated') === 'true';
+                    const planParam = urlParams.get('plan') || 'pro';
 
-                    if (planParam === 'pro') {
-                        const expires = new Date();
-                        expires.setDate(expires.getDate() + 30);
-                        updates.subscriptionExpiresAt = firebase.firestore.Timestamp.fromDate(expires);
-                    } else {
-                        updates.subscriptionExpiresAt = null;
-                    }
-
-                    await db.collection('users').doc(user.uid).update(updates);
-                    currentUserProfile = await getUserProfile(user.uid);
-                    updateAuthUI(user, currentUserProfile);
-                    updateUsageDisplay(currentUserProfile);
-                    showToast(`🎉 Payment Successful! ${planParam === 'pro' ? 'Pro ($19/mo)' : 'Founder Lifetime ($30)'} plan activated!`, 'success');
+                    // Clean up URL query parameters cleanly
                     window.history.replaceState({}, document.title, window.location.pathname);
+
+                    if (isSimulated && db) {
+                        // Allow 1-click upgrade ONLY during explicit test simulation mode
+                        const updates = {
+                            plan: planParam,
+                            maxLimit: 999999,
+                            subscriptionId: 'simulated_' + Date.now(),
+                            purchasedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+                        if (planParam === 'pro') {
+                            const expires = new Date();
+                            expires.setDate(expires.getDate() + 30);
+                            updates.subscriptionExpiresAt = firebase.firestore.Timestamp.fromDate(expires);
+                            updates.cancelAtPeriodEnd = false;
+                        }
+                        await db.collection('users').doc(user.uid).update(updates);
+                        currentUserProfile = await getUserProfile(user.uid);
+                        updateAuthUI(user, currentUserProfile);
+                        updateUsageDisplay(currentUserProfile);
+                        showToast(`🎉 Simulation Success! Activated ${planParam === 'pro' ? 'Pro ($19/mo)' : 'Founder Lifetime ($30)'} plan!`, 'success');
+                    } else {
+                        // Real payment return: re-sync user profile from Firestore (which server webhook updated)
+                        setTimeout(async () => {
+                            currentUserProfile = await getUserProfile(user.uid);
+                            updateAuthUI(user, currentUserProfile);
+                            updateUsageDisplay(currentUserProfile);
+                            if (currentUserProfile && currentUserProfile.plan !== 'free') {
+                                showToast(`🎉 Welcome to ${currentUserProfile.plan === 'pro' ? 'Pro ($19/mo)' : 'Founder Lifetime'}!`, 'success');
+                            }
+                        }, 1200);
+                    }
                 }
             });
         });
